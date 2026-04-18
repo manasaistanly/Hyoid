@@ -18,6 +18,7 @@ app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/sos', require('./routes/sos'));
 app.use('/api/tracking', require('./routes/tracking'));
 app.use('/api/vitals', require('./routes/vitals'));
+app.use('/api/doctor', require('./routes/doctor'));
 
 // Initializing WebSockets
 require('./sockets/vitals')(io);

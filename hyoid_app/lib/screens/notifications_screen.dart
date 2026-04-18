@@ -15,7 +15,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'icon': Icons.check_circle_outline,
       'color': AppTheme.successGreen,
       'title': 'Booking Confirmed!',
-      'subtitle': 'Your appointment with Dr. Sarah Jenkins is confirmed for today.',
+      'subtitle':
+          'Your appointment with Dr. Sarah Jenkins is confirmed for today.',
       'time': '10:32 AM',
       'isRead': false,
     },
@@ -23,7 +24,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'icon': Icons.directions_car,
       'color': AppTheme.orangeAccent,
       'title': 'Technician Assigned',
-      'subtitle': 'Dr. Sarah Jenkins has been assigned and is preparing to leave.',
+      'subtitle':
+          'Dr. Sarah Jenkins has been assigned and is preparing to leave.',
       'time': '10:36 AM',
       'isRead': false,
     },
@@ -31,7 +33,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'icon': Icons.location_on,
       'color': Colors.blueAccent,
       'title': 'On the Way!',
-      'subtitle': 'Your technician is now heading to your location. ETA: 14 mins.',
+      'subtitle':
+          'Your technician is now heading to your location. ETA: 14 mins.',
       'time': '10:52 AM',
       'isRead': false,
     },
@@ -39,7 +42,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'icon': Icons.medical_services_outlined,
       'color': Colors.purpleAccent,
       'title': 'Upcoming Consultation',
-      'subtitle': 'Reminder: You have a general consultation scheduled tomorrow.',
+      'subtitle':
+          'Reminder: You have a general consultation scheduled tomorrow.',
       'time': 'Yesterday',
       'isRead': true,
     },
@@ -55,7 +59,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'icon': Icons.star_outline,
       'color': Colors.amber,
       'title': 'Rate Your Experience',
-      'subtitle': 'How was your last visit? Leave a rating for Dr. Sarah Jenkins.',
+      'subtitle':
+          'How was your last visit? Leave a rating for Dr. Sarah Jenkins.',
       'time': '3 days ago',
       'isRead': true,
     },
@@ -107,7 +112,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     onPressed: _markAllRead,
                     child: const Text(
                       'Mark all read',
-                      style: TextStyle(color: AppTheme.orangeAccent, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: AppTheme.orangeAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -118,7 +126,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: _notifications.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final n = _notifications[index];
                   return _buildNotificationCard(index, n);
@@ -137,7 +145,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         setState(() {
           _notifications[index]['isRead'] = true;
           // Recalculate badge count
-          globalNotifCount.value = _notifications.where((n) => n['isRead'] == false).length;
+          globalNotifCount.value = _notifications
+              .where((n) => n['isRead'] == false)
+              .length;
         });
       },
       child: AnimatedContainer(
@@ -147,7 +157,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           color: n['isRead'] ? AppTheme.darkSurface : AppTheme.darkSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: n['isRead'] ? AppTheme.borderCol : (n['color'] as Color).withValues(alpha: 0.5),
+            color: n['isRead']
+                ? AppTheme.borderCol
+                : (n['color'] as Color).withValues(alpha: 0.5),
             width: n['isRead'] ? 1 : 1.5,
           ),
           boxShadow: n['isRead']
@@ -157,7 +169,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     color: (n['color'] as Color).withValues(alpha: 0.1),
                     blurRadius: 12,
                     spreadRadius: 1,
-                  )
+                  ),
                 ],
         ),
         child: Row(
@@ -169,7 +181,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 color: (n['color'] as Color).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(n['icon'] as IconData, color: n['color'] as Color, size: 22),
+              child: Icon(
+                n['icon'] as IconData,
+                color: n['color'] as Color,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -184,7 +200,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           n['title'] as String,
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: n['isRead'] ? FontWeight.w600 : FontWeight.bold,
+                            fontWeight: n['isRead']
+                                ? FontWeight.w600
+                                : FontWeight.bold,
                             fontSize: 15,
                           ),
                         ),

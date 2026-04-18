@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:hyoid_app/theme/app_theme.dart';
 import 'package:hyoid_app/screens/home_screen.dart';
 import 'package:hyoid_app/screens/vitals_screen.dart';
-import 'package:hyoid_app/screens/booking_screen.dart';
+import 'package:hyoid_app/screens/services_hub_screen.dart';
 import 'package:hyoid_app/screens/profile_screen.dart';
 import 'package:hyoid_app/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,12 +19,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
   int _currentIndex = 0;
   late AnimationController _holdController;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    VitalsScreen(),
-    SizedBox(), // Placeholder for SOS center button
-    BookingScreen(),
-    ProfileScreen(),
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const VitalsScreen(),
+    const SizedBox(), // Placeholder for SOS center button
+    const ServicesHubScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -131,7 +131,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
           ),
           
           Positioned(
-            bottom: 37,
+            bottom: 26,
             left: MediaQuery.of(context).size.width / 2 - 38,
             child: _buildSOSButton(),
           ),
@@ -146,19 +146,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: 70,
+          height: 80,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(35),
-            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildNavItem(Icons.home_outlined, 0, 'Home'),
-              _buildNavItem(Icons.auto_graph, 1, 'Vitals'),
-              const SizedBox(width: 70), // Space for center SOS button
-              _buildNavItem(Icons.calendar_today_outlined, 3, 'Booking'),
+              _buildNavItem(Icons.auto_graph, 1, 'Stats'),
+              const SizedBox(width: 56), // Space for center SOS button
+              _buildNavItem(Icons.calendar_month_outlined, 3, 'Booking'),
               _buildNavItem(Icons.person_outline, 4, 'Profile'),
             ],
           ),
@@ -193,18 +193,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
             Icon(
               icon,
               color: isActive ? AppTheme.orangeAccent : Colors.white54,
-              size: isActive ? 28 : 24,
+              size: isActive ? 26 : 24,
             ),
-            if (isActive)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: AppTheme.orangeAccent,
-                  shape: BoxShape.circle,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? AppTheme.orangeAccent : Colors.white54,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
+            ),
           ],
         ),
       ),
@@ -216,43 +215,57 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
       onTapDown: (_) => _holdController.forward(),
       onTapUp: (_) => _holdController.reverse(),
       onTapCancel: () => _holdController.reverse(),
-      child: Stack(
-        alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Background ring
-          SizedBox(
-            width: 76,
-            height: 76,
-            child: CircularProgressIndicator(
-              value: _holdController.value,
-              strokeWidth: 4,
-              color: AppTheme.dangerRed,
-              backgroundColor: Colors.transparent,
-            ),
-          ),
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: Color.lerp(AppTheme.orangeAccent, AppTheme.dangerRed, _holdController.value)!,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.orangeAccent.withOpacity(0.4 + (_holdController.value * 0.4)),
-                  blurRadius: 15 + (_holdController.value * 10),
-                  spreadRadius: 2 + (_holdController.value * 5),
-                )
-              ],
-            ),
-            child: Center(
-              child: Text(
-                "SOS",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18 + (_holdController.value * 4),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Background ring
+              SizedBox(
+                width: 76,
+                height: 76,
+                child: CircularProgressIndicator(
+                  value: _holdController.value,
+                  strokeWidth: 4,
+                  color: AppTheme.dangerRed,
+                  backgroundColor: Colors.transparent,
                 ),
               ),
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Color.lerp(AppTheme.orangeAccent, AppTheme.dangerRed, _holdController.value)!,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.orangeAccent.withValues(alpha: 0.4 + (_holdController.value * 0.4)),
+                      blurRadius: 15 + (_holdController.value * 10),
+                      spreadRadius: 2 + (_holdController.value * 5),
+                    )
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    "SOS",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18 + (_holdController.value * 4),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'SOS',
+            style: TextStyle(
+              color: Colors.white54,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

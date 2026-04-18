@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyoid_app/theme/app_theme.dart';
 import 'package:hyoid_app/screens/main_navigation_screen.dart';
 import 'package:hyoid_app/screens/register_screen.dart';
+import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,12 +14,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneCtrl = TextEditingController();
-  final List<TextEditingController> _otpCtrls = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _otpCtrls =
+      List.generate(6, (_) => TextEditingController());
   bool _otpSent = false;
   bool _isLoading = false;
+  String _selectedRole = 'patient'; // 'patient' | 'doctor'
 
   void _sendOtp() {
-    setState(() { _isLoading = true; });
+    setState(() => _isLoading = true);
     Future.delayed(const Duration(seconds: 1), () {
       setState(() {
         _isLoading = false;
@@ -28,61 +31,155 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _verifyOtp() async {
-    setState(() { _isLoading = true; });
+    setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
     await _saveTokenAndNavigate();
   }
 
   void _googleSignIn() async {
-    setState(() { _isLoading = true; });
-    // Simulate google SDK auth hook latency
+    setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
     await _saveTokenAndNavigate();
   }
 
   Future<void> _saveTokenAndNavigate() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('jwt_token', 'mock_token_123');
-    
+    final token = _selectedRole == 'doctor'
+        ? 'doctor_mock_jwt_token'
+        : 'patient_mock_jwt_token';
+    await prefs.setString('jwt_token', token);
+    await prefs.setString('user_role', _selectedRole);
+
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-      (Route<dynamic> route) => false
+      MaterialPageRoute(
+        builder: (_) => _selectedRole == 'doctor'
+            ? const DoctorShell()
+            : const MainNavigationScreen(),
+      ),
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDoctor = _selectedRole == 'doctor';
+    final accent = isDoctor ? const Color(0xFF60A5FA) : AppTheme.orangeAccent;
+
     return Scaffold(
       backgroundColor: AppTheme.pureBlack,
       appBar: AppBar(
-        leading: BackButton(color: Colors.white, onPressed: () => Navigator.pop(context)),
+        leading: BackButton(
+            color: Colors.white, onPressed: () => Navigator.pop(context)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Welcome back to", style: TextStyle(fontSize: 20, color: Colors.white54)),
-              const Text("HYOID", style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2)),
-              const SizedBox(height: 30),
-              
+              const Text('Welcome back to',
+                  style: TextStyle(fontSize: 20, color: Colors.white54)),
+              const Text('HYOID',
+                  style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2)),
+              const SizedBox(height: 24),
+
+              // ── Role Toggle ─────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppTheme.darkSurface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF333333)),
+                ),
+                child: Row(
+                  children: ['patient', 'doctor'].map((role) {
+                    final isActive = _selectedRole == role;
+                    final roleAccent = role == 'doctor'
+                        ? const Color(0xFF60A5FA)
+                        : AppTheme.orangeAccent;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _selectedRole = role;
+                          _otpSent = false;
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? roleAccent.withValues(alpha: 0.15)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: isActive
+                                ? Border.all(
+                                    color: roleAccent.withValues(alpha: 0.5),
+                                    width: 1.5)
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                role == 'doctor'
+                                    ? Icons.medical_services_rounded
+                                    : Icons.person_rounded,
+                                color: isActive ? roleAccent : Colors.white38,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                role == 'doctor' ? 'Doctor' : 'Patient',
+                                style: TextStyle(
+                                  color: isActive ? roleAccent : Colors.white38,
+                                  fontWeight: isActive
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               if (!_otpSent) ...[
-                const Text("Enter Phone Number", style: TextStyle(color: Colors.white70)),
+                Text(
+                  _selectedRole == 'doctor'
+                      ? 'Doctor Phone Number'
+                      : 'Enter Phone Number',
+                  style: const TextStyle(color: Colors.white70),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.phone, color: AppTheme.orangeAccent),
+                    prefixIcon: Icon(Icons.phone, color: accent),
                     filled: true,
                     fillColor: AppTheme.darkSurface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.borderCol)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.orangeAccent)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide:
+                            const BorderSide(color: AppTheme.borderCol)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: accent)),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -92,10 +189,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _sendOtp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.orangeAccent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      backgroundColor: accent,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Send OTP", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Send OTP',
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -104,7 +208,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     Expanded(child: Divider(color: AppTheme.borderCol)),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text("OR", style: TextStyle(color: Colors.white54)),
+                      child:
+                          Text('OR', style: TextStyle(color: Colors.white54)),
                     ),
                     Expanded(child: Divider(color: AppTheme.borderCol)),
                   ],
@@ -115,41 +220,60 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 56,
                   child: OutlinedButton.icon(
                     onPressed: _isLoading ? null : _googleSignIn,
-                    icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 36),
-                    label: const Text("Continue with Google", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                    icon: const Icon(Icons.g_mobiledata,
+                        color: Colors.white, size: 36),
+                    label: const Text('Continue with Google',
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppTheme.borderCol),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
                 ),
-                
               ] else ...[
-                const Text("Enter OTP", style: TextStyle(color: Colors.white70)),
+                const Text('Enter OTP',
+                    style: TextStyle(color: Colors.white70)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) => SizedBox(
-                    width: 48,
-                    height: 56,
-                    child: TextField(
-                      controller: _otpCtrls[index],
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      maxLength: 1,
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        filled: true,
-                        fillColor: AppTheme.darkSurface,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.borderCol)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.orangeAccent)),
+                  children: List.generate(
+                    6,
+                    (index) => SizedBox(
+                      width: 48,
+                      height: 56,
+                      child: TextField(
+                        controller: _otpCtrls[index],
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        maxLength: 1,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          filled: true,
+                          fillColor: AppTheme.darkSurface,
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(
+                                  color: AppTheme.borderCol)),
+                          focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: accent)),
+                        ),
+                        onChanged: (val) {
+                          if (val.isNotEmpty && index < 5) {
+                            FocusScope.of(context).nextFocus();
+                          }
+                        },
                       ),
-                      onChanged: (val) {
-                        if (val.isNotEmpty && index < 5) FocusScope.of(context).nextFocus();
-                      },
                     ),
-                  )),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -158,24 +282,36 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _verifyOtp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.orangeAccent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      backgroundColor: accent,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Verify & Login", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Verify & Login',
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                   ),
                 ),
               ],
-              
+
               const Spacer(),
-              
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   const Text("New to Hyoid? ", style: TextStyle(color: Colors.white54)),
-                   GestureDetector(
-                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                     child: const Text("Register here", style: TextStyle(color: AppTheme.orangeAccent, fontWeight: FontWeight.bold)),
-                   ),
+                  const Text('New to Hyoid? ',
+                      style: TextStyle(color: Colors.white54)),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(
+                            builder: (_) => const RegisterScreen())),
+                    child: Text('Register here',
+                        style: TextStyle(
+                            color: accent, fontWeight: FontWeight.bold)),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hyoid_app/theme/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as sio;
 import 'dart:math';
 
 class VitalsScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class VitalsScreen extends StatefulWidget {
 }
 
 class _VitalsScreenState extends State<VitalsScreen> {
-  late IO.Socket socket;
+  late sio.Socket socket;
   final List<FlSpot> _ecgData = [];
   double _time = 0;
 
@@ -28,9 +28,9 @@ class _VitalsScreenState extends State<VitalsScreen> {
   }
 
   void _initSocket() {
-    socket = IO.io(
+    socket = sio.io(
       'http://10.0.2.2:5000/vitals',
-      IO.OptionBuilder()
+      sio.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
           .build(),
@@ -58,8 +58,9 @@ class _VitalsScreenState extends State<VitalsScreen> {
         double y = sin(_time * 5) * 0.5;
         if (_time % 2 < 0.2) {
           y += 5.0; // Spike
-        } else if (_time % 2 < 0.4)
+        } else if (_time % 2 < 0.4) {
           y -= 1.0;
+        }
 
         _ecgData.add(FlSpot(_time, y));
         if (_ecgData.length > 50) _ecgData.removeAt(0);

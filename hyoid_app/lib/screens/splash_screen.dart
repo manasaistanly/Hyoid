@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyoid_app/theme/app_theme.dart';
 import 'package:hyoid_app/screens/main_navigation_screen.dart';
+import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -55,12 +57,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    // Wait until animation gracefully completely finishes
     await Future.delayed(const Duration(milliseconds: 3200));
     if (!mounted) return;
 
-    // Proceed to Home
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
+    final prefs = await SharedPreferences.getInstance();
+    final role = prefs.getString('user_role') ?? 'patient';
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => role == 'doctor'
+            ? const DoctorShell()
+            : const MainNavigationScreen(),
+      ),
+    );
   }
 
   @override

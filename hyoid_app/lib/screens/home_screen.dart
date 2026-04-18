@@ -1,10 +1,31 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/services_hub_screen.dart';
-import 'package:hyoid_app/screens/live_tracking_screen.dart';
-import 'package:hyoid_app/screens/notifications_screen.dart';
-import 'package:hyoid_app/globals.dart';
+import '../globals.dart';
+import '../theme/app_theme.dart';
+import 'services_hub_screen.dart';
+import 'live_tracking_screen.dart';
+import 'lab_report_screen.dart';
+import 'package:hyoid_app/models/lab_test_model.dart';
+import 'notifications_screen.dart';
+
+
+class CarouselSlide {
+  final String imageUrl;
+  final String? assetPath; // optional local asset, overrides imageUrl when set
+  final String title;
+  final String subtitle;
+  final String badge;
+  final String ctaText;
+
+  const CarouselSlide({
+    required this.imageUrl,
+    this.assetPath,
+    required this.title,
+    required this.subtitle,
+    required this.badge,
+    required this.ctaText,
+  });
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,27 +35,66 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentRecordIndex = 0;
-  Timer? _animTimer;
-  
-  // Simulating an empty records payload
-  final List<Map<String, dynamic>> _records = [];
+  PageController? _carouselController;
+  int _currentCarouselIndex = 0;
+  Timer? _carouselTimer;
+
+  final List<CarouselSlide> _carouselSlides = [
+    const CarouselSlide(
+      // Doctor with patient — specialist consultation
+      imageUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=800&auto=format&fit=crop',
+      title: 'Expert Care\nAnywhere',
+      subtitle: 'Connect with top specialists instantly',
+      badge: 'FEATURED',
+      ctaText: 'Book Now',
+    ),
+    const CarouselSlide(
+      // Nurse in scrubs — professional nursing care
+      imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=800&auto=format&fit=crop',
+      title: '24/7 Nursing\nSupport',
+      subtitle: 'Professional care at your doorstep',
+      badge: 'POPULAR',
+      ctaText: 'Get Care',
+    ),
+    const CarouselSlide(
+      // Local generated asset — Advanced Diagnostics lab photo
+      imageUrl: '',
+      assetPath: 'assets/images/diagnostics_hero.png',
+      title: 'Advanced\nDiagnostics',
+      subtitle: 'Accurate results from home',
+      badge: 'NEW',
+      ctaText: 'Test Now',
+    ),
+    const CarouselSlide(
+      // Medicine / pharmacy pills and capsules
+      imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=800&auto=format&fit=crop',
+      title: 'Express\nPharmacy',
+      subtitle: 'Medications delivered fast',
+      badge: 'FAST',
+      ctaText: 'Order Now',
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _animTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (mounted && _records.isNotEmpty) {
-        setState(() {
-          _currentRecordIndex = (_currentRecordIndex + 1) % _records.length;
-        });
+    _carouselController = PageController(viewportFraction: 0.9);
+    _carouselTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted && _carouselController!.hasClients) {
+        final nextPage = (_currentCarouselIndex + 1) % _carouselSlides.length;
+        _carouselController!.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
       }
     });
   }
 
   @override
   void dispose() {
-    _animTimer?.cancel();
+    _carouselTimer?.cancel();
+    _carouselController?.dispose();
     super.dispose();
   }
 
@@ -53,9 +113,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.orangeAccent.withOpacity(0.1),
+                  color: AppTheme.orangeAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.orangeAccent.withOpacity(0.3)),
+                  border: Border.all(color: AppTheme.orangeAccent.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: const [
@@ -102,19 +162,148 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 30),
           
-          // Featured Banners
+          // Hero Carousel
           SizedBox(
             height: 200,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
+            child: Stack(
               children: [
-                _buildHeroCard(
-                  "Get Expert\nCare Anywhere", 
-                  "https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=600&auto=format&fit=crop",
+                PageView.builder(
+                  controller: _carouselController,
+                  onPageChanged: (index) {
+                    setState(() => _currentCarouselIndex = index);
+                  },
+                  itemCount: _carouselSlides.length,
+                  itemBuilder: (context, index) {
+                    final slide = _carouselSlides[index];
+                    return AnimatedBuilder(
+                      animation: _carouselController!,
+                      builder: (context, child) {
+                        double value = 1.0;
+                        if (_carouselController!.position.haveDimensions) {
+                          value = _carouselController!.page! - index;
+                          value = (1 - (value.abs() * 0.1)).clamp(0.0, 1.0);
+                        }
+                        return Transform.scale(
+                          scale: value * 0.08 + 0.92, // scale from 0.92 to 1.0
+                          child: child,
+                        );
+                      },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            image: DecorationImage(
+                              image: slide.assetPath != null
+                                  ? AssetImage(slide.assetPath!) as ImageProvider
+                                  : NetworkImage(slide.imageUrl),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.7),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: Stack(
+                            children: [
+                              // Badge
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF5722),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    slide.badge,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Content
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    slide.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    slide.subtitle,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.7),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF5722),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      slide.ctaText,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                _buildHeroCard(
-                  "Doorstep\nDiagnostics", 
-                  "https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=600&auto=format&fit=crop",
+                // Indicators
+                Positioned(
+                  bottom: 20,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _carouselSlides.length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _currentCarouselIndex == index ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _currentCarouselIndex == index
+                              ? const Color(0xFFFF5722)
+                              : Colors.white.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -148,28 +337,37 @@ class _HomeScreenState extends State<HomeScreen> {
           const Text("Recent Records", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 16),
           
-          if (_records.isEmpty)
-             _buildEmptyRecordsCard()
-          else
-             AnimatedSwitcher(
-               duration: const Duration(milliseconds: 600),
-               transitionBuilder: (child, animation) {
-                 return FadeTransition(
-                   opacity: animation,
-                   child: SlideTransition(
-                     position: Tween<Offset>(begin: const Offset(0.0, 0.2), end: Offset.zero).animate(CurvedAnimation(
-                       parent: animation, 
-                       curve: Curves.easeOutBack
-                     )),
-                     child: child,
-                   ),
-                 );
-               },
-               child: _buildAnimatedRecordCard(
-                  key: ValueKey<int>(_currentRecordIndex),
-                  record: _records[_currentRecordIndex],
-               ),
-             ),
+          ValueListenableBuilder<List<LabReport>>(
+            valueListenable: globalLabReports,
+            builder: (context, reports, _) {
+              if (reports.isEmpty) {
+                return _buildEmptyRecordsCard();
+              }
+
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 600),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(begin: const Offset(0.0, 0.2), end: Offset.zero).animate(CurvedAnimation(
+                        parent: animation, 
+                        curve: Curves.easeOutBack
+                      )),
+                      child: child,
+                    ),
+                  );
+                },
+                child: GestureDetector(
+                  key: ValueKey<String>(reports.first.id),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => LabReportScreen(report: reports.first)));
+                  },
+                  child: _buildLabReportCard(report: reports.first),
+                ),
+              );
+            },
+          ),
 
           const SizedBox(height: 220), // Bottom nav & floating banner padding
         ],
@@ -179,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, hasBooking, child) {
           if (!hasBooking) return const SizedBox.shrink();
           return Positioned(
-            bottom: 110,
+            bottom: 120,
             left: 20,
             right: 20,
             child: _buildActiveTrackingBanner(context),
@@ -191,56 +389,8 @@ class _HomeScreenState extends State<HomeScreen> {
 );
   }
 
-  Widget _buildHeroCard(String title, String imageUrl) {
+  Widget _buildLabReportCard({required LabReport report}) {
     return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.borderCol),
-        image: DecorationImage(
-          image: NetworkImage(imageUrl),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(AppTheme.pureBlack.withOpacity(0.4), BlendMode.darken),
-        )
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              AppTheme.pureBlack.withOpacity(0.9),
-              Colors.transparent,
-            ]
-          )
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, height: 1.2)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text("Explore Now", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildAnimatedRecordCard({required Key key, required Map<String, dynamic> record}) {
-    return Container(
-      key: key,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.darkSurface,
@@ -248,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
         border: Border.all(color: AppTheme.borderCol, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: record['color'].withOpacity(0.05),
+            color: AppTheme.orangeAccent.withOpacity(0.05),
             blurRadius: 20,
             spreadRadius: 2,
           )
@@ -259,8 +409,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: record['color'].withOpacity(0.15), shape: BoxShape.circle),
-            child: Icon(record['icon'], color: record['color'], size: 28),
+            decoration: BoxDecoration(color: AppTheme.orangeAccent.withOpacity(0.15), shape: BoxShape.circle),
+            child: const Icon(Icons.folder_shared, color: AppTheme.orangeAccent, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -270,13 +420,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(child: Text(record['title'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
+                    Expanded(child: Text(report.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(record['sub'], style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                Text('Provider: ${report.provider}', style: const TextStyle(color: Colors.white70, fontSize: 14)),
                 const SizedBox(height: 6),
-                Text(record['date'], style: TextStyle(color: record['color'], fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('Generated on ${report.requestedAt.toLocal()}', style: const TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -287,7 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppTheme.borderCol)
             ),
-            child: const Text("View", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            child: const Text('View', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
           )
         ],
       ),
@@ -302,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppTheme.borderCol, width: 1.5),
         boxShadow: [
-          BoxShadow(color: Colors.white.withOpacity(0.02), blurRadius: 20, spreadRadius: 2)
+          BoxShadow(color: Colors.white.withValues(alpha: 0.02), blurRadius: 20, spreadRadius: 2)
         ]
       ),
       child: Center(
@@ -310,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle),
               child: const Icon(Icons.folder_open, color: Colors.white54, size: 36),
             ),
             const SizedBox(height: 16),
@@ -328,9 +478,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActiveTrackingBanner(BuildContext context) {
+    final booking = globalActiveBooking;
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveTrackingScreen()));
+        if (booking == null) return;
+        Navigator.push(context, MaterialPageRoute(builder: (_) => LiveTrackingScreen(booking: booking)));
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -363,10 +515,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text("Arriving in 14 mins", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  SizedBox(height: 4),
-                  Text("Dr. Sarah Jenkins is on the way", style: TextStyle(color: Colors.white54, fontSize: 13)),
+                children: [
+                  const Text("Arriving in 14 mins", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Text("${globalActiveBooking?.providerName ?? 'Your provider'} is on the way", style: const TextStyle(color: Colors.white54, fontSize: 13)),
                 ],
               ),
             ),

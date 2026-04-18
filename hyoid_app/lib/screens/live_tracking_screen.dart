@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hyoid_app/theme/app_theme.dart';
 import 'package:hyoid_app/globals.dart';
+import 'package:hyoid_app/models/service_model.dart';
+import 'package:hyoid_app/models/lab_test_model.dart';
+import 'package:hyoid_app/screens/lab_report_screen.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
-  const LiveTrackingScreen({super.key});
+  final ServiceBooking booking;
+  const LiveTrackingScreen({super.key, required this.booking});
 
   @override
   State<LiveTrackingScreen> createState() => _LiveTrackingScreenState();
@@ -11,6 +17,11 @@ class LiveTrackingScreen extends StatefulWidget {
 
 class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
+  Timer? _reportTimer;
+  bool _reportReady = false;
+  LabReport? _currentReport;
+
+  bool get _isLabBooking => widget.booking.title == 'Doorstep Lab Test';
 
   @override
   void initState() {
@@ -19,11 +30,29 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
        vsync: this,
        duration: const Duration(seconds: 2)
     )..repeat(reverse: true);
+
+    if (_isLabBooking) {
+      _currentReport = globalLabReports.value.isNotEmpty ? globalLabReports.value.first : null;
+      _reportTimer = Timer(const Duration(seconds: 8), () {
+        if (!mounted) return;
+        final reports = globalLabReports.value;
+        if (reports.isNotEmpty) {
+          final report = reports.first;
+          final updatedReport = report.copyWith(status: 'Report ready');
+          globalLabReports.value = [updatedReport, ...reports.where((element) => element.id != report.id)];
+          setState(() {
+            _currentReport = updatedReport;
+            _reportReady = true;
+          });
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _reportTimer?.cancel();
     super.dispose();
   }
 
@@ -61,13 +90,13 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                       height: 50 + (_pulseController.value * 40),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppTheme.orangeAccent.withValues(alpha: 0.3 - (_pulseController.value * 0.2)),
+                        color: widget.booking.color.withValues(alpha: 0.3 - (_pulseController.value * 0.2)),
                       ),
                     ),
-                    const CircleAvatar(
-                      backgroundColor: AppTheme.orangeAccent,
+                    CircleAvatar(
+                      backgroundColor: widget.booking.color,
                       radius: 14,
-                      child: Icon(Icons.local_hospital, color: Colors.white, size: 16),
+                      child: Icon(widget.booking.icon, color: Colors.white, size: 16),
                     )
                   ],
                 );
@@ -115,15 +144,19 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Arriving in", style: TextStyle(color: Colors.white54, fontSize: 16)),
-                          SizedBox(height: 4),
-                          Text("14 mins", style: TextStyle(color: AppTheme.orangeAccent, fontSize: 36, fontWeight: FontWeight.bold)),
+                        children: [
+                          const Text("Arriving in", style: TextStyle(color: Colors.white54, fontSize: 16)),
+                          const SizedBox(height: 4),
+                          Text("14 mins", style: TextStyle(color: widget.booking.color, fontSize: 36, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(color: AppTheme.successGreen.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.3))),
+                        decoration: BoxDecoration(
+                          color: AppTheme.successGreen.withValues(alpha: 0.15), 
+                          borderRadius: BorderRadius.circular(20), 
+                          border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.3))
+                        ),
                         child: Row(
                           children: const [
                             Icon(Icons.directions_car, color: AppTheme.successGreen, size: 16),
@@ -149,9 +182,15 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildProgressStep("Booking Confirmed", "10:30 AM", true, false),
-                        _buildProgressStep("Technician Assigned", "10:35 AM", true, false),
-                        _buildProgressStep("On the Way", "Expected 11:00 AM", true, true), // Active step
-                        _buildProgressStep("Service Started", "Pending", false, false, isLast: true),
+                        _buildProgressStep("Provider Assigned", "10:35 AM", true, false),
+                        _buildProgressStep("On the Way", "Expected 11:00 AM", !_reportReady, !_reportReady),
+                        _buildProgressStep(
+                          _reportReady ? "Report Ready" : "Service Started",
+                          _reportReady ? "Tap to view your report" : "Pending",
+                          _reportReady,
+                          _reportReady,
+                          isLast: true,
+                        ),
                       ],
                     ),
                   ),
@@ -160,19 +199,19 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                   
                   Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 30,
-                        backgroundColor: AppTheme.borderCol,
-                        child: Icon(Icons.person, color: Colors.white, size: 30),
+                        backgroundColor: widget.booking.color.withValues(alpha: 0.1),
+                        child: Icon(widget.booking.icon, color: widget.booking.color, size: 30),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Dr. Sarah Jenkins", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                            SizedBox(height: 4),
-                            Text("Cardiologist • 4.9 ★", style: TextStyle(color: Colors.white54, fontSize: 14)),
+                          children: [
+                            Text(widget.booking.providerName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(widget.booking.specialization, style: const TextStyle(color: Colors.white54, fontSize: 14)),
                           ],
                         ),
                       ),
@@ -183,6 +222,28 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                     ],
                   ),
                   
+                  if (_isLabBooking && _reportReady)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final report = globalLabReports.value.isNotEmpty ? globalLabReports.value.first : null;
+                            if (report != null) {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => LabReportScreen(report: report)));
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.orangeAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          child: const Text('View Test Report', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                        ),
+                      ),
+                    ),
+
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -260,7 +321,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.darkSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppTheme.borderCol)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: AppTheme.borderCol)),
           title: Row(
             children: const [
               Icon(Icons.warning_rounded, color: AppTheme.dangerRed),
