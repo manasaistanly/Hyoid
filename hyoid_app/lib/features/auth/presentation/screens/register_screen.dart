@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/main_navigation_screen.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/main_navigation_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -27,6 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('jwt_token', 'mock_token_register_456');
+    await prefs.setString('user_role', 'patient');
     
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(

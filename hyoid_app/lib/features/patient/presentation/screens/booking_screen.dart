@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/live_tracking_screen.dart';
-import 'package:hyoid_app/globals.dart';
-import 'package:hyoid_app/models/service_model.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/live_tracking_screen.dart';
+import 'package:hyoid_app/core/state/globals.dart';
+import 'package:hyoid_app/features/patient/data/models/service_model.dart';
 import 'dart:async';
 
 class BookingScreen extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/splash_screen.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/auth/presentation/screens/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

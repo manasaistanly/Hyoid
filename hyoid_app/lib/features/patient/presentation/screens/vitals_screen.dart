@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:socket_io_client/socket_io_client.dart' as sio;
 import 'dart:math';
@@ -112,8 +112,8 @@ class _VitalsScreenState extends State<VitalsScreen> {
                 Expanded(
                   child: LineChart(
                     LineChartData(
-                      gridData: FlGridData(show: false),
-                      titlesData: FlTitlesData(show: false),
+                      gridData: const FlGridData(show: false),
+                      titlesData: const FlTitlesData(show: false),
                       borderData: FlBorderData(show: false),
                       lineBarsData: [
                         LineChartBarData(
@@ -122,7 +122,7 @@ class _VitalsScreenState extends State<VitalsScreen> {
                           color: AppTheme.successGreen,
                           barWidth: 2,
                           isStrokeCapRound: true,
-                          dotData: FlDotData(show: false),
+                          dotData: const FlDotData(show: false),
                         ),
                       ],
                       minY: -2,

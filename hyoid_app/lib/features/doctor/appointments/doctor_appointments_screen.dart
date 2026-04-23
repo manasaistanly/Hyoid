@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart'
     show kDoctorBlue;
 import 'package:hyoid_app/features/doctor/appointments/patient_detail_screen.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
 
 class DoctorAppointmentsScreen extends StatefulWidget {
   const DoctorAppointmentsScreen({super.key});

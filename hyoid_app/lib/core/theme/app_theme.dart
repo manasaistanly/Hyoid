@@ -6,6 +6,7 @@ class AppTheme {
   static const Color borderCol = Color(0xFF2A2A2A);
   
   static const Color orangeAccent = Color(0xFFE85D1E);
+  static const Color blueAccent = Color(0xFF3B82F6); // Added from Doctor app
   static const Color successGreen = Color(0xFF4ADE80);
   static const Color warningOrange = Color(0xFFFB923C);
   static const Color dangerRed = Color(0xFFEF4444);

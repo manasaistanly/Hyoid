@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../globals.dart';
-import '../theme/app_theme.dart';
-import 'services_hub_screen.dart';
-import 'live_tracking_screen.dart';
-import 'lab_report_screen.dart';
-import 'package:hyoid_app/models/lab_test_model.dart';
-import 'notifications_screen.dart';
-
+import 'package:hyoid_app/core/state/globals.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/services_hub_screen.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/live_tracking_screen.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/lab_report_screen.dart';
+import 'package:hyoid_app/features/patient/data/models/lab_test_model.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/notifications_screen.dart';
 
 class CarouselSlide {
   final String imageUrl;
@@ -41,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<CarouselSlide> _carouselSlides = [
     const CarouselSlide(
-      // Doctor with patient — specialist consultation
       imageUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=800&auto=format&fit=crop',
       title: 'Expert Care\nAnywhere',
       subtitle: 'Connect with top specialists instantly',
@@ -49,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ctaText: 'Book Now',
     ),
     const CarouselSlide(
-      // Nurse in scrubs — professional nursing care
       imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=800&auto=format&fit=crop',
       title: '24/7 Nursing\nSupport',
       subtitle: 'Professional care at your doorstep',
@@ -57,7 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ctaText: 'Get Care',
     ),
     const CarouselSlide(
-      // Local generated asset — Advanced Diagnostics lab photo
       imageUrl: '',
       assetPath: 'assets/images/diagnostics_hero.png',
       title: 'Advanced\nDiagnostics',
@@ -66,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ctaText: 'Test Now',
     ),
     const CarouselSlide(
-      // Medicine / pharmacy pills and capsules
       imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=800&auto=format&fit=crop',
       title: 'Express\nPharmacy',
       subtitle: 'Medications delivered fast',
@@ -117,8 +112,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppTheme.orangeAccent.withValues(alpha: 0.3)),
                 ),
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Icon(Icons.stars_rounded, color: AppTheme.orangeAccent, size: 16),
                     SizedBox(width: 4),
                     Text("Premium", style: TextStyle(color: AppTheme.orangeAccent, fontWeight: FontWeight.bold)),
@@ -320,8 +315,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ServicesHubScreen()));
                 },
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Text("Book Now", style: TextStyle(color: AppTheme.orangeAccent, fontWeight: FontWeight.bold, fontSize: 16)),
                     SizedBox(width: 4),
                     Icon(Icons.arrow_forward_ios, color: AppTheme.orangeAccent, size: 14),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/main_navigation_screen.dart';
-import 'package:hyoid_app/screens/register_screen.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/main_navigation_screen.dart';
+import 'package:hyoid_app/features/auth/presentation/screens/register_screen.dart';
+import 'package:hyoid_app/features/auth/presentation/screens/doctor_registration_screen.dart';
 import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -43,17 +44,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _saveTokenAndNavigate() async {
+    // Mocking response from backend
+    final Map<String, dynamic> response = {
+      'token': _selectedRole == 'doctor' ? 'doctor_mock_jwt_token' : 'patient_mock_jwt_token',
+      'role': _selectedRole, // In a real app, this is determined by the server
+    };
+
     final prefs = await SharedPreferences.getInstance();
-    final token = _selectedRole == 'doctor'
-        ? 'doctor_mock_jwt_token'
-        : 'patient_mock_jwt_token';
+    final String token = response['token'] ?? '';
+    final String role = (response['role'] as String?)?.toLowerCase() ?? 'patient';
+
     await prefs.setString('jwt_token', token);
-    await prefs.setString('user_role', _selectedRole);
+    await prefs.setString('user_role', role);
 
     if (!mounted) return;
+
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => _selectedRole == 'doctor'
+        builder: (_) => role == 'doctor'
             ? const DoctorShell()
             : const MainNavigationScreen(),
       ),
@@ -305,9 +313,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text('New to Hyoid? ',
                       style: TextStyle(color: Colors.white54)),
                   GestureDetector(
-                    onTap: () => Navigator.push(context,
+                    onTap: () => Navigator.push(
+                        context,
                         MaterialPageRoute(
-                            builder: (_) => const RegisterScreen())),
+                            builder: (_) => _selectedRole == 'doctor'
+                                ? const DoctorRegistrationScreen()
+                                : const RegisterScreen())),
                     child: Text('Register here',
                         style: TextStyle(
                             color: accent, fontWeight: FontWeight.bold)),

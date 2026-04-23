@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart'
     show kDoctorBlue;
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/login_screen.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/auth/presentation/screens/login_screen.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});

@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/models/lab_test_model.dart';
-import 'package:hyoid_app/models/service_model.dart';
-import 'package:hyoid_app/screens/live_tracking_screen.dart';
-import 'package:hyoid_app/screens/services_hub_screen.dart';
-import 'package:hyoid_app/globals.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/data/models/lab_test_model.dart';
+import 'package:hyoid_app/features/patient/data/models/service_model.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/live_tracking_screen.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/services_hub_screen.dart';
+import 'package:hyoid_app/core/state/globals.dart';
 
 class LabCartScreen extends StatefulWidget {
   const LabCartScreen({super.key});
@@ -112,17 +112,17 @@ class _LabCartScreenState extends State<LabCartScreen> {
         valueListenable: globalLabCart,
         builder: (context, cart, _) {
           if (cart.isEmpty) {
-            return Center(
+            return const Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.shopping_bag_outlined, size: 72, color: Colors.white24),
-                    const SizedBox(height: 18),
-                    const Text('Your lab cart is empty', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('Add available tests from the lab catalog to schedule collection and generate your report.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    SizedBox(height: 18),
+                    Text('Your lab cart is empty', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 8),
+                    Text('Add available tests from the lab catalog to schedule collection and generate your report.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 14)),
                   ],
                 ),
               ),

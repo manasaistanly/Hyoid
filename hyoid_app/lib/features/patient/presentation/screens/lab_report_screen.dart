@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/models/lab_test_model.dart';
-import 'package:hyoid_app/globals.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/data/models/lab_test_model.dart';
+import 'package:hyoid_app/core/state/globals.dart';
 
 class LabReportScreen extends StatefulWidget {
   final LabReport report;

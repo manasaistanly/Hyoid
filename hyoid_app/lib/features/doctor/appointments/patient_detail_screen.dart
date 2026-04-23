@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart'
     show kDoctorBlue;
-import 'package:hyoid_app/theme/app_theme.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
 
 class PatientDetailScreen extends StatefulWidget {
   final Map<String, dynamic> appointment;

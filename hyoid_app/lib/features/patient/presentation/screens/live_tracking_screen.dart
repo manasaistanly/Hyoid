@@ -1,11 +1,10 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/globals.dart';
-import 'package:hyoid_app/models/service_model.dart';
-import 'package:hyoid_app/models/lab_test_model.dart';
-import 'package:hyoid_app/screens/lab_report_screen.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/core/state/globals.dart';
+import 'package:hyoid_app/features/patient/data/models/service_model.dart';
+import 'package:hyoid_app/features/patient/data/models/lab_test_model.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/lab_report_screen.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
   final ServiceBooking booking;
@@ -157,8 +156,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                           borderRadius: BorderRadius.circular(20), 
                           border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.3))
                         ),
-                        child: Row(
-                          children: const [
+                        child: const Row(
+                          children: [
                             Icon(Icons.directions_car, color: AppTheme.successGreen, size: 16),
                             SizedBox(width: 6),
                             Text("On the way", style: TextStyle(color: AppTheme.successGreen, fontWeight: FontWeight.bold)),
@@ -322,8 +321,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
         return AlertDialog(
           backgroundColor: AppTheme.darkSurface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: AppTheme.borderCol)),
-          title: Row(
-            children: const [
+          title: const Row(
+            children: [
               Icon(Icons.warning_rounded, color: AppTheme.dangerRed),
               SizedBox(width: 8),
               Text("Cancel Booking", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),

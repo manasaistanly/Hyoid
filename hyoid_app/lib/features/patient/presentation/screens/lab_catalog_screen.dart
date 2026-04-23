@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/models/lab_test_model.dart';
-import 'package:hyoid_app/globals.dart';
-import 'package:hyoid_app/screens/lab_cart_screen.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/data/models/lab_test_model.dart';
+import 'package:hyoid_app/core/state/globals.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/lab_cart_screen.dart';
 
 class LabCatalogScreen extends StatefulWidget {
   const LabCatalogScreen({super.key});
@@ -171,9 +171,9 @@ class _LabTestCard extends StatelessWidget {
               children: [
                 Text(test.title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
-                Text(test.description, style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+                Text(test.description, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
                 const SizedBox(height: 8),
-                Text('Specimen: ${test.specimen}', style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w600)),
+                Text('Specimen: ${test.specimen}', style: const TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w600)),
               ],
             ),
           ),

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:hyoid_app/models/service_model.dart';
-import 'package:hyoid_app/models/lab_test_model.dart';
+import 'package:hyoid_app/features/patient/data/models/service_model.dart';
+import 'package:hyoid_app/features/patient/data/models/lab_test_model.dart';
 
 // Global state mock for active bookings
 final ValueNotifier<bool> globalHasActiveBooking = ValueNotifier<bool>(false);

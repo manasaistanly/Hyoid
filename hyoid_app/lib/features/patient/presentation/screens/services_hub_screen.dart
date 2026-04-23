@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/booking_screen.dart';
-import 'package:hyoid_app/screens/lab_catalog_screen.dart';
-import 'package:hyoid_app/models/service_model.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/booking_screen.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/lab_catalog_screen.dart';
+import 'package:hyoid_app/features/patient/data/models/service_model.dart';
 
 class ServicesHubScreen extends StatelessWidget {
   const ServicesHubScreen({super.key});
@@ -119,8 +119,6 @@ class ServicesHubScreen extends StatelessWidget {
     );
   }
 }
-
-// ── Service card widget ───────────────────────────────────────────────────────
 
 class _ServiceCard extends StatefulWidget {
   final ServiceBooking service;

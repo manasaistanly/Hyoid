@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/globals.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/core/state/globals.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});

@@ -35,6 +35,65 @@ router.get('/stats', (req, res) => {
   });
 });
 
+// ── Patient Requests (Doctor Dashboard) ───────────────────────────────────────
+const mockRequests = [
+  {
+    id: 'req_001',
+    patientId: 'p_001',
+    patientName: 'Ravi',
+    age: 45,
+    symptoms: 'Fever, cough, body pain since 3 days',
+    priority: 'normal',
+    status: 'pending',
+    time: '2026-04-22T10:30:00Z',
+    assistantNotes: 'Patient has mild wheezing. Temperature: 101F.',
+  },
+  {
+    id: 'req_002',
+    patientId: 'p_002',
+    patientName: 'Anita',
+    age: 32,
+    symptoms: 'Severe abdominal pain, vomiting',
+    priority: 'emergency',
+    status: 'pending',
+    time: '2026-04-22T11:15:00Z',
+    assistantNotes: 'Tenderness in lower right abdomen.',
+  }
+];
+
+router.get('/requests', (req, res) => {
+  res.json({ success: true, data: mockRequests });
+});
+
+router.get('/patient/:id', (req, res) => {
+  const { id } = req.params;
+  // Mock patient data
+  const patients = {
+    'p_001': { id: 'p_001', name: 'Ravi', age: 45, medicalHistory: ['Hypertension'], vitals: { BP: '130/85', Temp: '101 F' } },
+    'p_002': { id: 'p_002', name: 'Anita', age: 32, medicalHistory: [], vitals: { BP: '110/70', Temp: '99 F' } },
+  };
+  const patient = patients[id] || { id, name: 'Unknown', age: 0 };
+  res.json({ success: true, data: patient });
+});
+
+router.post('/prescription', (req, res) => {
+  const { patientId, medicines, notes } = req.body;
+  console.log(`Prescription for ${patientId}: ${medicines.join(', ')}`);
+  res.json({ success: true, message: 'Prescription submitted successfully' });
+});
+
+router.post('/lab', (req, res) => {
+  const { patientId, testName } = req.body;
+  console.log(`Lab suggestion for ${patientId}: ${testName}`);
+  res.json({ success: true, message: 'Lab test suggested' });
+});
+
+router.post('/hospital', (req, res) => {
+  const { patientId, reason } = req.body;
+  console.log(`Hospital referral for ${patientId}: ${reason}`);
+  res.json({ success: true, message: 'Hospital referral sent' });
+});
+
 // ── Appointments ──────────────────────────────────────────────────────────────
 const mockAppointments = [
   { id: 'appt_001', patientName: 'Arjun Sharma', patientAge: 34, date: '2026-04-17', time: '11:30 AM', duration: 30, type: 'in-person', status: 'confirmed', reason: 'Chest pain follow-up', notes: '' },

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'package:hyoid_app/theme/app_theme.dart';
-import 'package:hyoid_app/screens/home_screen.dart';
-import 'package:hyoid_app/screens/vitals_screen.dart';
-import 'package:hyoid_app/screens/services_hub_screen.dart';
-import 'package:hyoid_app/screens/profile_screen.dart';
-import 'package:hyoid_app/screens/login_screen.dart';
+import 'package:hyoid_app/core/theme/app_theme.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/home_screen.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/vitals_screen.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/services_hub_screen.dart';
+import 'package:hyoid_app/features/patient/presentation/screens/profile_screen.dart';
+import 'package:hyoid_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MainNavigationScreen extends StatefulWidget {
