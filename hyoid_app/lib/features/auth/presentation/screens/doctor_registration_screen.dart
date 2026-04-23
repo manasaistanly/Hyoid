@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyoid_app/core/theme/app_theme.dart';
-import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart' show kDoctorBlue;
+import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart';
 
 class DoctorRegistrationScreen extends StatefulWidget {
   const DoctorRegistrationScreen({super.key});
@@ -33,7 +33,7 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
     
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const DoctorShell()),
+      MaterialPageRoute(builder: (_) => DoctorShell()),
       (Route<dynamic> route) => false
     );
   }

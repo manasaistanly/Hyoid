@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => role == 'doctor'
-            ? const DoctorShell()
+            ? DoctorShell()
             : const MainNavigationScreen(),
       ),
       (route) => false,

@@ -202,6 +202,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
             Text(label,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
           ],
@@ -235,18 +236,21 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800)),
-                Text(label,
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(value,
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800)),
+                  Text(label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
+                ],
+              ),
             ),
           ],
         ),

@@ -73,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       context,
       MaterialPageRoute(
         builder: (_) => role == 'doctor'
-            ? const DoctorShell()
+            ? DoctorShell()
             : const MainNavigationScreen(),
       ),
     );
