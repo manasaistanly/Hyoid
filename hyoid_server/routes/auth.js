@@ -1,34 +1,48 @@
+/**
+ * routes/auth.js
+ * ─────────────────────────────────────────────────────────────
+ * Auth routes — mounted at /api/auth in server.js
+ *
+ * Public routes (no token needed):
+ *   POST /api/auth/register       — email/password registration
+ *   POST /api/auth/login          — email/password login
+ *   POST /api/auth/google         — Google ID token verification (NEW)
+ *   POST /api/auth/send-otp       — send SMS OTP (NEW)
+ *   POST /api/auth/verify-otp     — verify OTP (NEW)
+ *   POST /api/auth/refresh-token  — exchange refresh token for new access token
+ *
+ * Protected routes (JWT required):
+ *   GET  /api/auth/me             — current user profile + requiresPayment flag
+ *   PUT  /api/auth/device-token   — update FCM push token
+ * ─────────────────────────────────────────────────────────────
+ */
 const express = require('express');
+const {
+  register,
+  login,
+  googleSignIn,
+  sendOtp,
+  verifyOtp,
+  refreshToken,
+  getMe,
+  updateDeviceToken,
+  verifyFirebaseToken,
+} = require('../controllers/authController');
+const { protect } = require('../middleware/auth');
+
 const router = express.Router();
 
-// Mock Auth routes — role field added for Flutter role-based routing
-router.post('/send-otp', (req, res) => {
-    res.json({ success: true, message: 'OTP sent' });
-});
+// Public
+router.post('/register', register);
+router.post('/login', login);
+router.post('/google', googleSignIn);
+router.post('/send-otp', sendOtp);
+router.post('/verify-otp', verifyOtp);
+router.post('/verify-firebase', verifyFirebaseToken);
+router.post('/refresh-token', refreshToken);
 
-router.post('/verify-otp', (req, res) => {
-    const role = req.body.role || 'patient'; // Flutter sends selected role
-    const token = role === 'doctor' ? 'doctor_mock_jwt_token' : 'patient_mock_jwt_token';
-    res.json({
-        success: true,
-        token,
-        user: { id: `mock_${role}_id`, phone: req.body.phone, role },
-    });
-});
-
-router.post('/google', (req, res) => {
-    const role = req.body.role || 'patient';
-    const token = role === 'doctor' ? 'doctor_mock_jwt_token' : 'patient_mock_jwt_token';
-    res.json({
-        success: true,
-        token,
-        user: { id: `mock_google_${role}_id`, email: req.body.email, role },
-    });
-});
-
-router.post('/register', (req, res) => {
-    const role = req.body.role || 'patient';
-    res.json({ success: true, token: `${role}_mock_jwt_token`, user: { ...req.body, role } });
-});
+// Protected
+router.get('/me', protect, getMe);
+router.put('/device-token', protect, updateDeviceToken);
 
 module.exports = router;

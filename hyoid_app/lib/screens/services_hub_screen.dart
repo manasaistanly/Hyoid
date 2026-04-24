@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hyoid_app/theme/app_theme.dart';
 import 'package:hyoid_app/screens/booking_screen.dart';
 import 'package:hyoid_app/screens/lab_catalog_screen.dart';
+import 'package:hyoid_app/screens/book_appointment_screen.dart';
 import 'package:hyoid_app/models/service_model.dart';
 
 class ServicesHubScreen extends StatelessWidget {
@@ -143,9 +144,13 @@ class _ServiceCardState extends State<_ServiceCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => s.title == 'Doorstep Lab Test'
-                ? const LabCatalogScreen()
-                : BookingScreen(booking: s),
+            builder: (_) => s.title == 'Consult a Doctor'
+                ? const BookAppointmentScreen(type: 'doctor')
+                : s.title == 'Book a Nurse'
+                ? const BookAppointmentScreen(type: 'nurse')
+                : s.title == 'Doorstep Lab Test'
+                    ? const LabCatalogScreen()
+                    : BookingScreen(booking: s),
           ),
         );
       },

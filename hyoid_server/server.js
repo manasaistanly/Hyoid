@@ -1,32 +1,76 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
 const http = require('http');
 const { Server } = require('socket.io');
-const cors = require('cors');
+
+const connectDB = require('./config/db');
+const errorHandler = require('./middleware/errorHandler');
+
+// Connect to DB
+connectDB();
 
 const app = express();
+
+// Security middlewares
+app.use(helmet());
+app.use(mongoSanitize());
+
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+app.use(limiter);
+
+// Body parser
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS Configuration
+app.use(cors({
+  origin: '*', // Allow all origins for development
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Route files
+const auth = require('./routes/auth');
+const users = require('./routes/users');
+const appointments = require('./routes/appointments');
+const notifications = require('./routes/notifications');
+const payment = require('./routes/payment');
+
+// Mount routers
+app.use('/api/auth', auth);
+app.use('/api/users', users);
+app.use('/api/appointments', appointments);
+app.use('/api/notifications', notifications);
+app.use('/api/payment', payment);
+
+// Error handling middleware
+app.use(errorHandler);
+
 const server = http.createServer(app);
+
+// Socket.io initialization
 const io = new Server(server, { cors: { origin: '*' } });
 
-app.use(cors());
-app.use(express.json());
+// Attach io to app so default router / controller can use it
+app.set('io', io);
 
-// Routes mapping
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/bookings', require('./routes/bookings'));
-app.use('/api/sos', require('./routes/sos'));
-app.use('/api/tracking', require('./routes/tracking'));
-app.use('/api/vitals', require('./routes/vitals'));
-app.use('/api/doctor', require('./routes/doctor'));
+io.on('connection', (socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+  
+  socket.on('join', (room) => {
+    socket.join(room);
+    console.log(`Socket ${socket.id} joined room: ${room}`);
+  });
 
-// Initializing WebSockets
-require('./sockets/vitals')(io);
-require('./sockets/tracking')(io);
+  socket.on('disconnect', () => {
+    console.log('User disconnected', socket.id);
+  });
+});
 
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.error(err));
+const PORT = process.env.PORT || 3000;
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, console.log(`Server running on port ${PORT}`));

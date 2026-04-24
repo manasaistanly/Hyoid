@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:hyoid_app/theme/app_theme.dart';
 import 'package:hyoid_app/models/lab_test_model.dart';
 import 'package:hyoid_app/models/service_model.dart';
+import 'package:hyoid_app/providers/auth_provider.dart';
+import 'package:hyoid_app/core/auth/post_login_redirect.dart';
+import 'package:hyoid_app/widgets/login_prompt_sheet.dart';
 import 'package:hyoid_app/screens/live_tracking_screen.dart';
 import 'package:hyoid_app/screens/services_hub_screen.dart';
 import 'package:hyoid_app/globals.dart';
@@ -19,7 +23,10 @@ class _LabCartScreenState extends State<LabCartScreen> {
   String _selectedCycle = 'one-time'; // 'one-time', 'weekly', 'monthly'
 
   int get _totalAmount {
-    int baseAmount = globalLabCart.value.fold(0, (sum, item) => sum + item.price);
+    int baseAmount = globalLabCart.value.fold(
+      0,
+      (sum, item) => sum + item.price,
+    );
     return baseAmount;
   }
 
@@ -46,21 +53,30 @@ class _LabCartScreenState extends State<LabCartScreen> {
   }
 
   ServiceBooking get _labBooking => ServicesHubScreen.services.firstWhere(
-        (service) => service.title == 'Doorstep Lab Test',
-        orElse: () => ServiceBooking(
-          title: 'Doorstep Lab Test',
-          subtitle: 'Sample collection delivered to your door.',
-          providerName: 'Apex Diagnostics',
-          specialization: 'Certified Phlebotomist • LabCorp',
-          icon: Icons.science_rounded,
-          color: const Color(0xFFA78BFA),
-          glowColor: const Color(0x26A78BFA),
-          priceFrom: 300,
-        ),
-      );
+    (service) => service.title == 'Doorstep Lab Test',
+    orElse: () => ServiceBooking(
+      title: 'Doorstep Lab Test',
+      subtitle: 'Sample collection delivered to your door.',
+      providerName: 'Apex Diagnostics',
+      specialization: 'Certified Phlebotomist • LabCorp',
+      icon: Icons.science_rounded,
+      color: const Color(0xFFA78BFA),
+      glowColor: const Color(0x26A78BFA),
+      priceFrom: 300,
+    ),
+  );
 
   Future<void> _checkout() async {
     if (globalLabCart.value.isEmpty) return;
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isGuest) {
+      pendingActionService.setPending(() {
+        _checkout();
+      });
+      showLoginPromptSheet(context, actionDescription: 'proceed to checkout');
+      return;
+    }
 
     setState(() => _isCheckingOut = true);
     await Future.delayed(const Duration(seconds: 2));
@@ -73,11 +89,13 @@ class _LabCartScreenState extends State<LabCartScreen> {
       status: 'Sample collector is on the way',
       amount: _totalAmount,
       results: globalLabCart.value
-          .map((item) => LabReportItem(
-                name: item.title,
-                result: 'Pending',
-                normalRange: 'Please collect sample',
-              ))
+          .map(
+            (item) => LabReportItem(
+              name: item.title,
+              result: 'Pending',
+              normalRange: 'Please collect sample',
+            ),
+          )
           .toList(),
     );
 
@@ -90,12 +108,15 @@ class _LabCartScreenState extends State<LabCartScreen> {
     setState(() => _isCheckingOut = false);
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => LiveTrackingScreen(booking: _labBooking)),
+      MaterialPageRoute(
+        builder: (_) => LiveTrackingScreen(booking: _labBooking),
+      ),
     );
   }
 
   void _removeItem(LabTest item) {
-    final newCart = List<LabTest>.from(globalLabCart.value)..removeWhere((element) => element.id == item.id);
+    final newCart = List<LabTest>.from(globalLabCart.value)
+      ..removeWhere((element) => element.id == item.id);
     globalLabCart.value = newCart;
   }
 
@@ -106,7 +127,14 @@ class _LabCartScreenState extends State<LabCartScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: AppTheme.darkSurface,
-        title: const Text('Lab Cart', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20)),
+        title: const Text(
+          'Lab Cart',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
       ),
       body: ValueListenableBuilder<List<LabTest>>(
         valueListenable: globalLabCart,
@@ -118,11 +146,26 @@ class _LabCartScreenState extends State<LabCartScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.shopping_bag_outlined, size: 72, color: Colors.white24),
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 72,
+                      color: Colors.white24,
+                    ),
                     const SizedBox(height: 18),
-                    const Text('Your lab cart is empty', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Your lab cart is empty',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    const Text('Add available tests from the lab catalog to schedule collection and generate your report.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    const Text(
+                      'Add available tests from the lab catalog to schedule collection and generate your report.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
                   ],
                 ),
               ),
@@ -132,7 +175,7 @@ class _LabCartScreenState extends State<LabCartScreen> {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
             itemCount: cart.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 14),
+            separatorBuilder: (_, _) => const SizedBox(height: 14),
             itemBuilder: (context, index) {
               final item = cart[index];
               return Container(
@@ -140,9 +183,16 @@ class _LabCartScreenState extends State<LabCartScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.darkSurface,
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: const Color(0xFF2E2E2E), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFF2E2E2E),
+                    width: 1.5,
+                  ),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 18, offset: const Offset(0, 8)),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -162,28 +212,61 @@ class _LabCartScreenState extends State<LabCartScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(
+                            item.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                           const SizedBox(height: 6),
-                          Text(item.description, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+                          Text(
+                            item.description,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white12,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Text('Specimen: ${item.specimen}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                                child: Text(
+                                  'Specimen: ${item.specimen}',
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white12,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Text('₹${item.price}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                                child: Text(
+                                  '₹${item.price}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -193,12 +276,22 @@ class _LabCartScreenState extends State<LabCartScreen> {
                     GestureDetector(
                       onTap: () => _removeItem(item),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
                           color: const Color(0xFF222222),
                         ),
-                        child: const Text('Remove', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                        child: const Text(
+                          'Remove',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -221,26 +314,49 @@ class _LabCartScreenState extends State<LabCartScreen> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: const Color(0xFF2E2E2E), width: 1.5),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 20, offset: const Offset(0, 12)),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.18),
+                    blurRadius: 20,
+                    offset: const Offset(0, 12),
+                  ),
                 ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Payment Cycle', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Payment Cycle',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: _buildCycleButton('one-time', 'One-Time', 'Pay once'),
+                        child: _buildCycleButton(
+                          'one-time',
+                          'One-Time',
+                          'Pay once',
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildCycleButton('weekly', 'Weekly', 'Recurring'),
+                        child: _buildCycleButton(
+                          'weekly',
+                          'Weekly',
+                          'Recurring',
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildCycleButton('monthly', 'Monthly', 'Save 10%'),
+                        child: _buildCycleButton(
+                          'monthly',
+                          'Monthly',
+                          'Save 10%',
+                        ),
                       ),
                     ],
                   ),
@@ -252,20 +368,51 @@ class _LabCartScreenState extends State<LabCartScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Amount to Pay', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500)),
+                          const Text(
+                            'Amount to Pay',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           const SizedBox(height: 6),
-                          Text('₹$_displayAmount', style: const TextStyle(color: AppTheme.orangeAccent, fontSize: 28, fontWeight: FontWeight.bold)),
+                          Text(
+                            '₹$_displayAmount',
+                            style: const TextStyle(
+                              color: AppTheme.orangeAccent,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(_cycleLabel, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500)),
+                          Text(
+                            _cycleLabel,
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.orangeAccent.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text('Sample Collection Included', style: TextStyle(color: AppTheme.orangeAccent, fontSize: 12, fontWeight: FontWeight.w600)),
+                        child: const Text(
+                          'Sample Collection Included',
+                          style: TextStyle(
+                            color: AppTheme.orangeAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -277,20 +424,36 @@ class _LabCartScreenState extends State<LabCartScreen> {
                       onPressed: _isCheckingOut ? null : _checkout,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.orangeAccent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 8,
                       ),
                       child: _isCheckingOut
                           ? const SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
                             )
-                          : const Text('Pay & Schedule Collection', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                          : const Text(
+                              'Pay & Schedule Collection',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text('Our phlebotomist will collect sample at your home', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  const Text(
+                    'Our phlebotomist will collect sample at your home',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -307,7 +470,9 @@ class _LabCartScreenState extends State<LabCartScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.orangeAccent.withOpacity(0.18) : Colors.white.withOpacity(0.05),
+          color: isSelected
+              ? AppTheme.orangeAccent.withOpacity(0.18)
+              : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppTheme.orangeAccent : const Color(0xFF2E2E2E),
@@ -316,9 +481,25 @@ class _LabCartScreenState extends State<LabCartScreen> {
         ),
         child: Column(
           children: [
-            Text(label, style: TextStyle(color: isSelected ? AppTheme.orangeAccent : Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppTheme.orangeAccent : Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(color: isSelected ? AppTheme.orangeAccent.withOpacity(0.8) : Colors.white54, fontSize: 10, fontWeight: FontWeight.w500)),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: isSelected
+                    ? AppTheme.orangeAccent.withOpacity(0.8)
+                    : Colors.white54,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

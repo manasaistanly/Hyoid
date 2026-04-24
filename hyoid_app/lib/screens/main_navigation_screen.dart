@@ -5,8 +5,7 @@ import 'package:hyoid_app/screens/home_screen.dart';
 import 'package:hyoid_app/screens/vitals_screen.dart';
 import 'package:hyoid_app/screens/services_hub_screen.dart';
 import 'package:hyoid_app/screens/profile_screen.dart';
-import 'package:hyoid_app/screens/login_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hyoid_app/core/guards/guest_guard.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -158,7 +157,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
               _buildNavItem(Icons.home_outlined, 0, 'Home'),
               _buildNavItem(Icons.auto_graph, 1, 'Stats'),
               const SizedBox(width: 56), // Space for center SOS button
-              _buildNavItem(Icons.calendar_month_outlined, 3, 'Booking'),
+              _buildNavItem(Icons.calendar_month_outlined, 3, 'Book'),
               _buildNavItem(Icons.person_outline, 4, 'Profile'),
             ],
           ),
@@ -167,17 +166,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
     );
   }
 
-  void _handleNavTap(int index) async {
+  void _handleNavTap(int index) {
     if (index == 1 || index == 3 || index == 4) {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token');
-      if (token == null || token.isEmpty) {
-        if (!mounted) return;
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-        return;
-      }
+      String actionDescription = 'continue';
+      if (index == 1) actionDescription = 'view your stats';
+      if (index == 3) actionDescription = 'book an appointment';
+      if (index == 4) actionDescription = 'view your profile';
+
+      guardedAction(
+        context,
+        () {
+          if (mounted) setState(() => _currentIndex = index);
+        },
+        actionDescription: actionDescription,
+      );
+    } else {
+      setState(() => _currentIndex = index);
     }
-    setState(() => _currentIndex = index);
   }
 
   Widget _buildNavItem(IconData icon, int index, String label) {
