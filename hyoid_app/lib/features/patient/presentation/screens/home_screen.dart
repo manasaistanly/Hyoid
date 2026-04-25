@@ -393,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
         border: Border.all(color: AppTheme.borderCol, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.orangeAccent.withOpacity(0.05),
+            color: AppTheme.orangeAccent.withValues(alpha: 0.05),
             blurRadius: 20,
             spreadRadius: 2,
           )
@@ -404,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppTheme.orangeAccent.withOpacity(0.15), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: AppTheme.orangeAccent.withValues(alpha: 0.15), shape: BoxShape.circle),
             child: const Icon(Icons.folder_shared, color: AppTheme.orangeAccent, size: 28),
           ),
           const SizedBox(width: 16),

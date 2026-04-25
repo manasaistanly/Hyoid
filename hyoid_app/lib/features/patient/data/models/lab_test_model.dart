@@ -18,6 +18,27 @@ class LabTest {
     required this.icon,
     required this.color,
   });
+
+  factory LabTest.fromJson(Map<String, dynamic> json) {
+    return LabTest(
+      id: json['_id']?.toString() ?? '',
+      title: json['name'] ?? '',
+      description: json['description'] ?? '',
+      specimen: json['specimen'] ?? '',
+      price: (json['price'] as num?)?.toInt() ?? 0,
+      icon: _getIcon(json['icon']),
+      color: const Color(0xFFA78BFA), // Default violet for labs
+    );
+  }
+
+  static IconData _getIcon(String? name) {
+    switch (name) {
+      case 'biotech_rounded': return Icons.biotech_rounded;
+      case 'opacity_rounded': return Icons.opacity_rounded;
+      case 'monitor_heart_rounded': return Icons.monitor_heart_rounded;
+      default: return Icons.science_rounded;
+    }
+  }
 }
 
 class LabReportItem {

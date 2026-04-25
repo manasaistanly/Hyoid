@@ -1,6 +1,6 @@
 enum RequestPriority { normal, emergency }
 
-enum RequestStatus { pending, accepted, completed, rejected }
+enum RequestStatus { pending, accepted, completed, rejected, lab_requested, hospital_referred }
 
 class DoctorRequest {
   final String id;
@@ -29,16 +29,18 @@ class DoctorRequest {
 
   factory DoctorRequest.fromJson(Map<String, dynamic> json) {
     return DoctorRequest(
-      id: json['id']?.toString() ?? '',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       patientId: json['patientId']?.toString() ?? '',
-      patientName: json['patientName'] ?? '',
+      patientName: json['patientName'] ?? 'Patient',
       age: json['age'] ?? 0,
       symptoms: json['symptoms'] ?? '',
-      priority: (json['priority'] == 'emergency')
+      priority: (json['isEmergency'] == true || json['priority'] == 'emergency')
           ? RequestPriority.emergency
           : RequestPriority.normal,
       status: _parseStatus(json['status']),
-      time: json['time'] != null ? DateTime.parse(json['time']) : DateTime.now(),
+      time: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']) 
+          : (json['time'] != null ? DateTime.parse(json['time']) : DateTime.now()),
       assistantNotes: json['assistantNotes'],
       images: json['images'] != null ? List<String>.from(json['images']) : null,
     );
@@ -52,6 +54,10 @@ class DoctorRequest {
         return RequestStatus.completed;
       case 'rejected':
         return RequestStatus.rejected;
+      case 'lab_requested':
+        return RequestStatus.lab_requested;
+      case 'hospital_referred':
+        return RequestStatus.hospital_referred;
       default:
         return RequestStatus.pending;
     }

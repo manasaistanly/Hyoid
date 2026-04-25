@@ -1,223 +1,233 @@
 const express = require('express');
 const router = express.Router();
+const Consultation = require('../models/Consultation');
+const mongoose = require('mongoose');
 
-// ── Mock role middleware ──────────────────────────────────────────────────────
-// In production: verify JWT and check request.user.role === 'doctor'
+// ── Doctor Auth Middleware ───────────────────────────────────────────────────
 const doctorOnly = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
-  // Mock: any token that starts with 'doctor_' is a doctor
-  // Real app: jwt.verify(token) and check role
-  next();
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  
+  // In this production-like mock, we assume the token IS the doctorId
+  // or contains it. We'll attach it to the request.
+  // Real app: const decoded = jwt.verify(token, secret); req.doctorId = decoded.id;
+  const token = authHeader.replace('Bearer ', '');
+  
+  // For the purpose of this task, if token is 'doctor_mock_jwt_token', we use a static ID
+  if (token === 'doctor_mock_jwt_token' || token.startsWith('mock_doctor_')) {
+    req.doctorId = new mongoose.Types.ObjectId("662867890123456789012345"); // Fixed mock doctor ID
+    return next();
+  }
+  
+  try {
+    req.doctorId = new mongoose.Types.ObjectId(token);
+    next();
+  } catch (e) {
+    res.status(401).json({ error: 'Unauthorized: Invalid doctor ID/token' });
+  }
 };
 
 router.use(doctorOnly);
 
 // ── Dashboard Stats ───────────────────────────────────────────────────────────
-router.get('/stats', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      todayCount: 8,
-      pendingCount: 3,
-      completedCount: 5,
-      weeklyCount: 34,
-      cancellationRate: 12.5, // percent
-      nextAppointment: {
-        id: 'appt_001',
-        patientName: 'Arjun Sharma',
-        patientAge: 34,
-        time: '11:30 AM',
-        type: 'in-person',
-        status: 'confirmed',
-      },
-    },
-  });
-});
+router.get('/stats', async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-// ── Patient Requests (Doctor Dashboard) ───────────────────────────────────────
-const mockRequests = [
-  {
-    id: 'req_001',
-    patientId: 'p_001',
-    patientName: 'Ravi',
-    age: 45,
-    symptoms: 'Fever, cough, body pain since 3 days',
-    priority: 'normal',
-    status: 'pending',
-    time: '2026-04-22T10:30:00Z',
-    assistantNotes: 'Patient has mild wheezing. Temperature: 101F.',
-  },
-  {
-    id: 'req_002',
-    patientId: 'p_002',
-    patientName: 'Anita',
-    age: 32,
-    symptoms: 'Severe abdominal pain, vomiting',
-    priority: 'emergency',
-    status: 'pending',
-    time: '2026-04-22T11:15:00Z',
-    assistantNotes: 'Tenderness in lower right abdomen.',
+    const stats = await Consultation.aggregate([
+      { $match: { doctorId: req.doctorId } },
+      {
+        $facet: {
+          totalToday: [
+            { $match: { createdAt: { $gte: today } } },
+            { $count: "count" }
+          ],
+          pending: [
+            { $match: { status: 'pending', assistantNotes: { $exists: true, $ne: "" } } },
+            { $count: "count" }
+          ],
+          emergency: [
+            { $match: { isEmergency: true, status: 'pending' } },
+            { $count: "count" }
+          ],
+          completed: [
+            { $match: { status: 'completed' } },
+            { $count: "count" }
+          ]
+        }
+      }
+    ]);
+
+    const result = {
+      totalToday: stats[0].totalToday[0]?.count || 0,
+      pending: stats[0].pending[0]?.count || 0,
+      emergency: stats[0].emergency[0]?.count || 0,
+      completed: stats[0].completed[0]?.count || 0
+    };
+
+    // Get Next Case (Highest priority pending)
+    const nextCase = await Consultation.findOne({
+      doctorId: req.doctorId,
+      status: 'pending',
+      assistantNotes: { $exists: true, $ne: "" }
+    }).sort({ isEmergency: -1, createdAt: 1 });
+
+    const doctor = await User.findById(req.doctorId);
+    res.json({ 
+      success: true, 
+      data: { 
+        ...result, 
+        nextCase, 
+        safetyNumber: doctor?.safetyNumber || '+910000000000' 
+      } 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
-];
-
-router.get('/requests', (req, res) => {
-  res.json({ success: true, data: mockRequests });
 });
 
-router.get('/patient/:id', (req, res) => {
-  const { id } = req.params;
-  // Mock patient data
-  const patients = {
-    'p_001': { id: 'p_001', name: 'Ravi', age: 45, medicalHistory: ['Hypertension'], vitals: { BP: '130/85', Temp: '101 F' } },
-    'p_002': { id: 'p_002', name: 'Anita', age: 32, medicalHistory: [], vitals: { BP: '110/70', Temp: '99 F' } },
-  };
-  const patient = patients[id] || { id, name: 'Unknown', age: 0 };
-  res.json({ success: true, data: patient });
-});
+// ── Patient Requests ─────────────────────────────────────────────────────────
+router.get('/requests', async (req, res) => {
+  try {
+    const { status } = req.query; // 'pending', 'accepted', 'completed'
+    let query = { doctorId: req.doctorId };
 
-router.post('/prescription', (req, res) => {
-  const { patientId, medicines, notes } = req.body;
-  console.log(`Prescription for ${patientId}: ${medicines.join(', ')}`);
-  res.json({ success: true, message: 'Prescription submitted successfully' });
-});
+    if (status === 'pending') {
+      query.status = 'pending';
+      query.assistantNotes = { $exists: true, $ne: "" }; // Rule: Only show if assistant notes exist
+    } else if (status) {
+      query.status = status;
+    }
 
-router.post('/lab', (req, res) => {
-  const { patientId, testName } = req.body;
-  console.log(`Lab suggestion for ${patientId}: ${testName}`);
-  res.json({ success: true, message: 'Lab test suggested' });
-});
+    const requests = await Consultation.find(query)
+      .sort({ isEmergency: -1, createdAt: -1 });
 
-router.post('/hospital', (req, res) => {
-  const { patientId, reason } = req.body;
-  console.log(`Hospital referral for ${patientId}: ${reason}`);
-  res.json({ success: true, message: 'Hospital referral sent' });
-});
-
-// ── Appointments ──────────────────────────────────────────────────────────────
-const mockAppointments = [
-  { id: 'appt_001', patientName: 'Arjun Sharma', patientAge: 34, date: '2026-04-17', time: '11:30 AM', duration: 30, type: 'in-person', status: 'confirmed', reason: 'Chest pain follow-up', notes: '' },
-  { id: 'appt_002', patientName: 'Priya Menon', patientAge: 28, date: '2026-04-17', time: '02:00 PM', duration: 30, type: 'online', status: 'pending', reason: 'Routine checkup', notes: '' },
-  { id: 'appt_003', patientName: 'Rahul Dev', patientAge: 45, date: '2026-04-17', time: '04:30 PM', duration: 45, type: 'in-person', status: 'pending', reason: 'Hypertension management', notes: '' },
-  { id: 'appt_004', patientName: 'Kavya Nair', patientAge: 31, date: '2026-04-18', time: '10:00 AM', duration: 30, type: 'online', status: 'confirmed', reason: 'Cardiology consultation', notes: '' },
-  { id: 'appt_005', patientName: 'Suresh Kumar', patientAge: 52, date: '2026-04-16', time: '09:00 AM', duration: 30, type: 'in-person', status: 'completed', reason: 'ECG review', notes: 'Prescribed Metoprolol 25mg. Follow up in 2 weeks.' },
-  { id: 'appt_006', patientName: 'Ananya Singh', patientAge: 22, date: '2026-04-15', time: '03:00 PM', duration: 30, type: 'online', status: 'cancelled', reason: 'Palpitations', notes: '' },
-  { id: 'appt_007', patientName: 'Mohan Raj', patientAge: 60, date: '2026-04-14', time: '11:00 AM', duration: 60, type: 'in-person', status: 'completed', reason: 'Post-surgery follow-up', notes: 'Recovery on track. Resume normal activity.' },
-];
-
-router.get('/appointments', (req, res) => {
-  const { status, date } = req.query;
-  let filtered = [...mockAppointments];
-  if (status) filtered = filtered.filter(a => a.status === status);
-  if (date) filtered = filtered.filter(a => a.date === date);
-  res.json({ success: true, data: filtered });
-});
-
-router.patch('/appointments/:id', (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  const validStatuses = ['confirmed', 'completed', 'cancelled', 'no_show'];
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    res.json({ success: true, data: requests });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
-  const appt = mockAppointments.find(a => a.id === id);
-  if (!appt) return res.status(404).json({ error: 'Appointment not found' });
-  appt.status = status;
-  res.json({ success: true, data: appt });
 });
 
-router.post('/appointments/:id/notes', (req, res) => {
-  const { id } = req.params;
-  const { notes } = req.body;
-  const appt = mockAppointments.find(a => a.id === id);
-  if (!appt) return res.status(404).json({ error: 'Appointment not found' });
-  appt.notes = notes;
-  res.json({ success: true, data: appt });
+// ── Consultation History ─────────────────────────────────────────────────────
+router.get('/history', async (req, res) => {
+  try {
+    const history = await Consultation.find({
+      doctorId: req.doctorId,
+      status: { $in: ['completed', 'rejected'] }
+    }).sort({ updatedAt: -1 });
+
+    res.json({ success: true, data: history });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-// ── Availability Rules ────────────────────────────────────────────────────────
-const availabilityRules = [
-  { id: 'rule_001', dayOfWeek: 1, startTime: '09:00', endTime: '17:00', slotDuration: 30 }, // Monday
-  { id: 'rule_002', dayOfWeek: 2, startTime: '09:00', endTime: '13:00', slotDuration: 30 }, // Tuesday
-  { id: 'rule_003', dayOfWeek: 3, startTime: '10:00', endTime: '18:00', slotDuration: 45 }, // Wednesday
-  { id: 'rule_004', dayOfWeek: 5, startTime: '09:00', endTime: '12:00', slotDuration: 30 }, // Friday
-];
-
-router.get('/availability', (req, res) => {
-  res.json({ success: true, data: availabilityRules });
+// ── Patient Details ──────────────────────────────────────────────────────────
+router.get('/patient/:id', async (req, res) => {
+  try {
+    const consultation = await Consultation.findById(req.params.id);
+    if (!consultation) return res.status(404).json({ error: 'Consultation not found' });
+    
+    // In a real app, we would also fetch patient profile from User collection
+    res.json({ success: true, data: consultation });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-router.post('/availability', (req, res) => {
-  const { dayOfWeek, startTime, endTime, slotDuration } = req.body;
-  // Check for overlap
-  const overlap = availabilityRules.find(r => r.dayOfWeek === dayOfWeek);
-  if (overlap) return res.status(409).json({ error: 'Availability rule for this day already exists. Update or delete the existing one.' });
-  const newRule = { id: `rule_${Date.now()}`, dayOfWeek, startTime, endTime, slotDuration };
-  availabilityRules.push(newRule);
-  res.status(201).json({ success: true, data: newRule });
-});
+// ── Decision Actions ──────────────────────────────────────────────────────────
 
-router.put('/availability/:id', (req, res) => {
-  const rule = availabilityRules.find(r => r.id === req.params.id);
-  if (!rule) return res.status(404).json({ error: 'Rule not found' });
-  Object.assign(rule, req.body);
-  res.json({ success: true, data: rule });
-});
+// Helper for status updates with validation
+const updateConsultationStatus = async (id, doctorId, fromStatus, toStatus, extraData = {}) => {
+  const consultation = await Consultation.findOne({ _id: id, doctorId });
+  if (!consultation) throw new Error('Consultation not found or unauthorized');
+  
+  if (consultation.status !== fromStatus) {
+    throw new Error(`Invalid transition: Current status is ${consultation.status}, expected ${fromStatus}`);
+  }
 
-router.delete('/availability/:id', (req, res) => {
-  const idx = availabilityRules.findIndex(r => r.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'Rule not found' });
-  availabilityRules.splice(idx, 1);
-  res.json({ success: true, message: 'Rule deleted' });
-});
-
-// ── Blocked Dates ─────────────────────────────────────────────────────────────
-const blockedDates = [
-  { id: 'block_001', date: '2026-04-21', reason: 'National Holiday' },
-  { id: 'block_002', date: '2026-04-25', reason: 'Conference' },
-];
-
-router.get('/blocked-dates', (req, res) => {
-  res.json({ success: true, data: blockedDates });
-});
-
-router.post('/blocked-dates', (req, res) => {
-  const { date, reason } = req.body;
-  const newBlock = { id: `block_${Date.now()}`, date, reason };
-  blockedDates.push(newBlock);
-  res.status(201).json({ success: true, data: newBlock });
-});
-
-router.delete('/blocked-dates/:id', (req, res) => {
-  const idx = blockedDates.findIndex(b => b.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'Blocked date not found' });
-  blockedDates.splice(idx, 1);
-  res.json({ success: true, message: 'Unblocked' });
-});
-
-// ── Doctor Profile ────────────────────────────────────────────────────────────
-let doctorProfile = {
-  id: 'doc_001',
-  name: 'Dr. Sarah Jenkins',
-  email: 'sarah.jenkins@hyoid.com',
-  phone: '+91 98765 43210',
-  specialty: 'Cardiologist',
-  qualifications: 'MBBS, MD (Cardiology), FACC',
-  bio: 'Senior cardiologist with 12+ years of experience in interventional cardiology and heart failure management.',
-  consultationFee: 800,
-  hospital: 'Generic Hospital, Chennai',
-  rating: 4.9,
-  totalPatients: 1240,
-  acceptingBookings: true,
+  Object.assign(consultation, { status: toStatus, ...extraData });
+  return await consultation.save();
 };
 
-router.get('/profile', (req, res) => {
-  res.json({ success: true, data: doctorProfile });
+router.post('/accept', async (req, res) => {
+  try {
+    const data = await updateConsultationStatus(req.body.id, req.doctorId, 'pending', 'accepted');
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
 });
 
-router.put('/profile', (req, res) => {
-  doctorProfile = { ...doctorProfile, ...req.body };
-  res.json({ success: true, data: doctorProfile });
+router.post('/reject', async (req, res) => {
+  try {
+    const data = await updateConsultationStatus(req.body.id, req.doctorId, 'pending', 'rejected');
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/prescription', async (req, res) => {
+  try {
+    const { id, prescription } = req.body;
+    const data = await updateConsultationStatus(id, req.doctorId, 'accepted', 'completed', { prescription });
+    res.json({ success: true, message: 'Prescription submitted and consultation completed', data });
+  } catch (err) {
+    // If it was still pending, allow direct completion too? Rule says pending -> accepted -> completed
+    // Let's stick to the rule but allow direct if desired. 
+    // The user said: "pending -> accepted -> completed"
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/lab', async (req, res) => {
+  try {
+    const { id, labTests } = req.body;
+    const data = await updateConsultationStatus(id, req.doctorId, 'accepted', 'lab_requested', { labTests });
+    res.json({ success: true, message: 'Lab tests requested', data });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/hospital', async (req, res) => {
+  try {
+    const { id, hospitalReferral } = req.body;
+    const data = await updateConsultationStatus(id, req.doctorId, 'accepted', 'hospital_referred', { hospitalReferral });
+    res.json({ success: true, message: 'Hospital referral sent', data });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+const User = require('../models/User');
+
+// ── Doctor Profile ────────────────────────────────────────────────────────────
+
+router.get('/profile', async (req, res) => {
+  try {
+    const doctor = await User.findById(req.doctorId);
+    if (!doctor) return res.status(404).json({ error: 'Doctor profile not found' });
+    res.json({ success: true, data: doctor });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.put('/profile', async (req, res) => {
+  try {
+    const doctor = await User.findByIdAndUpdate(
+      req.doctorId, 
+      { $set: req.body }, 
+      { new: true, runValidators: true }
+    );
+    if (!doctor) return res.status(404).json({ error: 'Doctor profile not found' });
+    res.json({ success: true, data: doctor });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 module.exports = router;

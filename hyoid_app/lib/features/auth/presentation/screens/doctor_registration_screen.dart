@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyoid_app/core/theme/app_theme.dart';
 import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart';
+import 'package:dio/dio.dart';
+import 'package:hyoid_app/core/constants/api_constants.dart';
 
 class DoctorRegistrationScreen extends StatefulWidget {
   const DoctorRegistrationScreen({super.key});
@@ -19,23 +21,62 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
   final TextEditingController _feeCtrl = TextEditingController();
   final TextEditingController _bioCtrl = TextEditingController();
   
+  String? _phone;
   bool _isLoading = false;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _phone ??= ModalRoute.of(context)?.settings.arguments as String?;
+    if (_phone != null && _phoneCtrl.text.isEmpty) {
+      _phoneCtrl.text = _phone!;
+    }
+  }
+
   void _submitRegistration() async {
+    if (_nameCtrl.text.isEmpty || _phoneCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Name and Phone are required')),
+      );
+      return;
+    }
+
     setState(() { _isLoading = true; });
     
-    // Simulate mock save to backend
-    await Future.delayed(const Duration(seconds: 2));
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('jwt_token', 'mock_token_doctor_register_789');
-    await prefs.setString('user_role', 'doctor');
-    
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => DoctorShell()),
-      (Route<dynamic> route) => false
-    );
+    try {
+      final response = await Dio().post('${ApiConstants.baseUrl}/auth/register', data: {
+        'role': 'doctor',
+        'name': _nameCtrl.text,
+        'phone': _phoneCtrl.text,
+        'specialty': _specialtyCtrl.text,
+        'licenseNumber': _licenseCtrl.text,
+        'experienceYears': int.tryParse(_expCtrl.text) ?? 0,
+        'consultationFee': int.tryParse(_feeCtrl.text) ?? 0,
+        'bio': _bioCtrl.text,
+      });
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('jwt_token', data['token'] ?? '');
+        await prefs.setString('user_role', 'doctor');
+        await prefs.setString('user_id', data['user']['id']?.toString() ?? '');
+        
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => DoctorShell()),
+          (Route<dynamic> route) => false
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration failed. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() { _isLoading = false; });
+    }
   }
 
   @override

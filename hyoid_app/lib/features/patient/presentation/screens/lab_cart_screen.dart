@@ -45,18 +45,15 @@ class _LabCartScreenState extends State<LabCartScreen> {
     }
   }
 
-  ServiceBooking get _labBooking => ServicesHubScreen.services.firstWhere(
-        (service) => service.title == 'Doorstep Lab Test',
-        orElse: () => ServiceBooking(
-          title: 'Doorstep Lab Test',
-          subtitle: 'Sample collection delivered to your door.',
-          providerName: 'Apex Diagnostics',
-          specialization: 'Certified Phlebotomist • LabCorp',
-          icon: Icons.science_rounded,
-          color: const Color(0xFFA78BFA),
-          glowColor: const Color(0x26A78BFA),
-          priceFrom: 300,
-        ),
+  ServiceBooking get _labBooking => const ServiceBooking(
+        title: 'Doorstep Lab Test',
+        subtitle: 'Sample collection delivered to your door.',
+        providerName: 'Apex Diagnostics',
+        specialization: 'Certified Phlebotomist • LabCorp',
+        icon: Icons.science_rounded,
+        color: Color(0xFFA78BFA),
+        glowColor: Color(0x26A78BFA),
+        priceFrom: 300,
       );
 
   Future<void> _checkout() async {
@@ -142,7 +139,7 @@ class _LabCartScreenState extends State<LabCartScreen> {
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: const Color(0xFF2E2E2E), width: 1.5),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 18, offset: const Offset(0, 8)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 8)),
                   ],
                 ),
                 child: Row(
@@ -152,7 +149,7 @@ class _LabCartScreenState extends State<LabCartScreen> {
                       width: 52,
                       height: 52,
                       decoration: BoxDecoration(
-                        color: item.color.withOpacity(0.18),
+                        color: item.color.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(item.icon, color: item.color, size: 28),
@@ -221,7 +218,7 @@ class _LabCartScreenState extends State<LabCartScreen> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: const Color(0xFF2E2E2E), width: 1.5),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 20, offset: const Offset(0, 12)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 12)),
                 ],
               ),
               child: Column(
@@ -262,7 +259,7 @@ class _LabCartScreenState extends State<LabCartScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: AppTheme.orangeAccent.withOpacity(0.12),
+                          color: AppTheme.orangeAccent.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text('Sample Collection Included', style: TextStyle(color: AppTheme.orangeAccent, fontSize: 12, fontWeight: FontWeight.w600)),
@@ -307,7 +304,7 @@ class _LabCartScreenState extends State<LabCartScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.orangeAccent.withOpacity(0.18) : Colors.white.withOpacity(0.05),
+          color: isSelected ? AppTheme.orangeAccent.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppTheme.orangeAccent : const Color(0xFF2E2E2E),
@@ -318,7 +315,7 @@ class _LabCartScreenState extends State<LabCartScreen> {
           children: [
             Text(label, style: TextStyle(color: isSelected ? AppTheme.orangeAccent : Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(color: isSelected ? AppTheme.orangeAccent.withOpacity(0.8) : Colors.white54, fontSize: 10, fontWeight: FontWeight.w500)),
+            Text(subtitle, style: TextStyle(color: isSelected ? AppTheme.orangeAccent.withValues(alpha: 0.8) : Colors.white54, fontSize: 10, fontWeight: FontWeight.w500)),
           ],
         ),
       ),

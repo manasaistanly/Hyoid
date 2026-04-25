@@ -2,13 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:hyoid_app/core/theme/app_theme.dart';
 import 'package:hyoid_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hyoid_app/features/patient/data/services/patient_api_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final PatientApiService _apiService = PatientApiService();
+  Map<String, dynamic>? _profile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await _apiService.getProfile();
+    if (mounted) {
+      setState(() {
+        _profile = profile;
+        _isLoading = false;
+      });
+    }
+  }
 
   void _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
+    await prefs.remove('user_role');
+    await prefs.remove('user_id');
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
@@ -18,6 +46,15 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: AppTheme.orangeAccent));
+    }
+
+    final name = _profile?['name'] ?? 'User';
+    final patientId = _profile?['patientId'] ?? 'HY-000000';
+    final bloodGroup = _profile?['bloodGroup'] ?? 'N/A';
+    final emergencyContact = _profile?['emergencyContact'] ?? 'N/A';
+
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -41,18 +78,18 @@ class ProfileScreen extends StatelessWidget {
                   child: Icon(Icons.person, size: 50, color: Colors.white),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  "Tesst user",
-                  style: TextStyle(
+                Text(
+                  name,
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  "Patient ID: HY-293812",
-                  style: TextStyle(fontSize: 14, color: AppTheme.orangeAccent),
+                Text(
+                  "Patient ID: $patientId",
+                  style: const TextStyle(fontSize: 14, color: AppTheme.orangeAccent),
                 ),
               ],
             ),
@@ -61,28 +98,21 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 40),
           _buildInfoRow(
             "Blood Group",
-            "O+",
+            bloodGroup,
             Icons.bloodtype,
             AppTheme.dangerRed,
           ),
           const SizedBox(height: 16),
           _buildInfoRow(
-            "Assigned Ward",
-            "ICU - Bed 4",
-            Icons.local_hospital,
-            Colors.blue,
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
             "Emergency Contact",
-            "+1 234 567 890",
+            emergencyContact,
             Icons.contact_phone,
             AppTheme.warningOrange,
           ),
 
           const SizedBox(height: 40),
           const Text(
-            "Previous Medical Records",
+            "Medical Records",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -90,47 +120,14 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          _buildRecordCard(
-            "Oct 12, 2023",
-            "Complete Blood Count",
-            "All levels normal",
-            Icons.science_outlined,
-            Colors.purpleAccent,
-          ),
-          const SizedBox(height: 12),
-          _buildRecordCard(
-            "Sep 04, 2023",
-            "General Consultation",
-            "Dr. Alice Smith",
-            Icons.medical_services_outlined,
-            Colors.blue,
-          ),
-          const SizedBox(height: 12),
-          _buildRecordCard(
-            "Jun 15, 2023",
-            "Chest X-Ray",
-            "No abnormalities detected",
-            Icons.personal_injury,
-            AppTheme.orangeAccent,
-          ),
-
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () {},
-              child: const Text(
-                "View Full History",
-                style: TextStyle(
-                  color: AppTheme.orangeAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          const Center(
+            child: Text(
+              "No recent records found",
+              style: TextStyle(color: Colors.white38, fontSize: 14),
             ),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 60),
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -160,12 +157,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(
-    String title,
-    String val,
-    IconData icon,
-    Color iconColor,
-  ) {
+  Widget _buildInfoRow(String title, String val, IconData icon, Color iconColor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -177,83 +169,11 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor),
           const SizedBox(width: 16),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white54, fontSize: 16),
-          ),
+          Text(title, style: const TextStyle(color: Colors.white54, fontSize: 16)),
           const Spacer(),
           Text(
             val,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecordCard(
-    String date,
-    String title,
-    String subtitle,
-    IconData icon,
-    Color iconColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.borderCol),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      date,
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ],
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),

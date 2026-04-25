@@ -3,6 +3,7 @@ import 'package:hyoid_app/core/theme/app_theme.dart';
 import 'package:hyoid_app/features/patient/presentation/screens/live_tracking_screen.dart';
 import 'package:hyoid_app/core/state/globals.dart';
 import 'package:hyoid_app/features/patient/data/models/service_model.dart';
+import 'package:hyoid_app/features/patient/data/services/patient_api_service.dart';
 import 'dart:async';
 
 class BookingScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _BookingScreenState extends State<BookingScreen> {
   int _selectedSlot = -1;
   bool _isProcessing = false;
   bool _isSuccess = false;
+  final PatientApiService _apiService = PatientApiService();
 
   final List<String> slots = [
     "09:00 AM", "10:00 AM", "11:30 AM",
@@ -31,26 +33,39 @@ class _BookingScreenState extends State<BookingScreen> {
       _isProcessing = true;
     });
 
-    // Simulate API delay
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      _isProcessing = false;
-      _isSuccess = true;
+    final success = await _apiService.createRequest({
+      'service': widget.booking.title,
+      'date': DateTime.now().add(Duration(days: _selectedDate)).toIso8601String(),
+      'slot': slots[_selectedSlot],
+      'doctorId': '662867890123456789012345', // Default doctor for now
+      'symptoms': 'General consultation', // Could be added as an input field later
     });
 
-    // Show success for 1.5 seconds then navigate
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    if (mounted) {
-      globalActiveBooking = widget.booking;
-      globalHasActiveBooking.value = true;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LiveTrackingScreen(booking: widget.booking),
-        ),
-      );
+    if (success) {
+      setState(() {
+        _isProcessing = false;
+        _isSuccess = true;
+      });
+
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      if (mounted) {
+        globalActiveBooking = widget.booking;
+        globalHasActiveBooking.value = true;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LiveTrackingScreen(booking: widget.booking),
+          ),
+        );
+      }
+    } else {
+      setState(() => _isProcessing = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Booking failed. Please try again.')),
+        );
+      }
     }
   }
 

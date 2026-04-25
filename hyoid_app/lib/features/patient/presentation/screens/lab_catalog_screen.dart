@@ -3,6 +3,7 @@ import 'package:hyoid_app/core/theme/app_theme.dart';
 import 'package:hyoid_app/features/patient/data/models/lab_test_model.dart';
 import 'package:hyoid_app/core/state/globals.dart';
 import 'package:hyoid_app/features/patient/presentation/screens/lab_cart_screen.dart';
+import 'package:hyoid_app/features/patient/data/services/patient_api_service.dart';
 
 class LabCatalogScreen extends StatefulWidget {
   const LabCatalogScreen({super.key});
@@ -12,53 +13,19 @@ class LabCatalogScreen extends StatefulWidget {
 }
 
 class _LabCatalogScreenState extends State<LabCatalogScreen> {
-  final List<LabTest> _availableTests = [
-    LabTest(
-      id: 'cbc',
-      title: 'Complete Blood Count',
-      description: 'Hemoglobin, RBC, WBC and platelet profile.',
-      specimen: 'Blood',
-      price: 420,
-      icon: Icons.bloodtype_rounded,
-      color: const Color(0xFF9D4EDD),
-    ),
-    LabTest(
-      id: 'lipid',
-      title: 'Lipid Profile',
-      description: 'Cholesterol, HDL, LDL and triglycerides.',
-      specimen: 'Blood',
-      price: 550,
-      icon: Icons.favorite_rounded,
-      color: const Color(0xFF4ADE80),
-    ),
-    LabTest(
-      id: 'thyroid',
-      title: 'Thyroid Panel',
-      description: 'TSH, T3, T4 levels for metabolic health.',
-      specimen: 'Blood',
-      price: 480,
-      icon: Icons.bolt_rounded,
-      color: const Color(0xFFF59E0B),
-    ),
-    LabTest(
-      id: 'bpsugar',
-      title: 'Blood Sugar Test',
-      description: 'Fasting and post-meal glucose readings.',
-      specimen: 'Blood',
-      price: 320,
-      icon: Icons.monitor_heart_rounded,
-      color: const Color(0xFF60A5FA),
-    ),
-    LabTest(
-      id: 'screen',
-      title: 'Full Body Screening',
-      description: 'Comprehensive health markers and wellness panel.',
-      specimen: 'Blood + Urine',
-      price: 980,
-      icon: Icons.health_and_safety_rounded,
-      color: const Color(0xFFFB7185),
-    ),
-  ];
+  final PatientApiService _apiService = PatientApiService();
+  late Future<List<LabTest>> _labsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _labsFuture = _fetchLabs();
+  }
+
+  Future<List<LabTest>> _fetchLabs() async {
+    final data = await _apiService.getLabs();
+    return data.map((json) => LabTest.fromJson(json)).toList();
+  }
 
   void _toggleCart(LabTest test) {
     final current = List<LabTest>.from(globalLabCart.value);
@@ -110,19 +77,46 @@ class _LabCatalogScreenState extends State<LabCatalogScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: _availableTests.length,
-        itemBuilder: (context, index) {
-          final test = _availableTests[index];
-          return ValueListenableBuilder<List<LabTest>>(
-            valueListenable: globalLabCart,
-            builder: (context, cart, _) {
-              final inCart = cart.any((item) => item.id == test.id);
-              return _LabTestCard(
-                test: test,
-                inCart: inCart,
-                onToggleCart: () => _toggleCart(test),
+      body: FutureBuilder<List<LabTest>>(
+        future: _labsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: AppTheme.orangeAccent));
+          }
+
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.science_rounded, color: Colors.white24, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('No lab tests available', style: TextStyle(color: Colors.white54)),
+                  TextButton(
+                    onPressed: () => setState(() => _labsFuture = _fetchLabs()),
+                    child: const Text('Retry', style: TextStyle(color: AppTheme.orangeAccent)),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final labs = snapshot.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: labs.length,
+            itemBuilder: (context, index) {
+              final test = labs[index];
+              return ValueListenableBuilder<List<LabTest>>(
+                valueListenable: globalLabCart,
+                builder: (context, cart, _) {
+                  final inCart = cart.any((item) => item.id == test.id);
+                  return _LabTestCard(
+                    test: test,
+                    inCart: inCart,
+                    onToggleCart: () => _toggleCart(test),
+                  );
+                },
               );
             },
           );
@@ -160,7 +154,7 @@ class _LabTestCard extends StatelessWidget {
             height: 62,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: test.color.withOpacity(0.18),
+              color: test.color.withValues(alpha: 0.18),
             ),
             child: Icon(test.icon, size: 28, color: test.color),
           ),

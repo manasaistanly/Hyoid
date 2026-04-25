@@ -81,7 +81,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(color: AppTheme.orangeAccent.withOpacity(0.18), borderRadius: BorderRadius.circular(14)),
+                      decoration: BoxDecoration(color: AppTheme.orangeAccent.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
                       child: Text(_report.status, style: const TextStyle(color: AppTheme.orangeAccent, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(width: 10),
@@ -90,7 +90,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
                     if (_report.sharedWithDoctor)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(color: AppTheme.successGreen.withOpacity(0.18), borderRadius: BorderRadius.circular(14)),
+                        decoration: BoxDecoration(color: AppTheme.successGreen.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
                         child: const Text('Shared', style: TextStyle(color: AppTheme.successGreen, fontWeight: FontWeight.bold)),
                       ),
                   ],
