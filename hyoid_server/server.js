@@ -27,6 +27,7 @@ app.use('/api/vitals', require('./routes/vitals'));
 app.use('/api/doctor', require('./routes/doctor'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/labs', require('./routes/labs'));
+app.use('/api/assistant', require('./routes/assistant'));
 
 // Initializing WebSockets
 require('./sockets/vitals')(io);

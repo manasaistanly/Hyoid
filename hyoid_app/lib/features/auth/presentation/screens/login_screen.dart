@@ -7,6 +7,7 @@ import 'package:hyoid_app/features/auth/presentation/screens/doctor_registration
 import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart';
 import 'package:dio/dio.dart';
 import 'package:hyoid_app/core/constants/api_constants.dart';
+import 'package:hyoid_app/features/assistant/presentation/screens/assistant_main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -114,12 +115,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
+    Widget destination;
+    if (role == 'doctor') {
+      destination = DoctorShell();
+    } else if (role == 'assistant') {
+      destination = const AssistantMainScreen();
+    } else {
+      destination = const MainNavigationScreen();
+    }
+
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => role == 'doctor'
-            ? DoctorShell()
-            : const MainNavigationScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => destination),
       (route) => false,
     );
   }
@@ -127,7 +133,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDoctor = _selectedRole == 'doctor';
-    final accent = isDoctor ? const Color(0xFF60A5FA) : AppTheme.orangeAccent;
+    final isAssistant = _selectedRole == 'assistant';
+    final accent = isDoctor 
+        ? const Color(0xFF60A5FA) 
+        : (isAssistant ? Colors.tealAccent : AppTheme.orangeAccent);
 
     return Scaffold(
       backgroundColor: AppTheme.pureBlack,
@@ -164,11 +173,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     border: Border.all(color: const Color(0xFF333333)),
                   ),
                   child: Row(
-                    children: ['patient', 'doctor'].map((role) {
+                    children: ['patient', 'doctor', 'assistant'].map((role) {
                       final isActive = _selectedRole == role;
-                      final roleAccent = role == 'doctor'
-                          ? const Color(0xFF60A5FA)
-                          : AppTheme.orangeAccent;
+                      Color roleAccent;
+                      IconData roleIcon;
+                      String roleLabel;
+
+                      if (role == 'doctor') {
+                        roleAccent = const Color(0xFF60A5FA);
+                        roleIcon = Icons.medical_services_rounded;
+                        roleLabel = 'Doctor';
+                      } else if (role == 'assistant') {
+                        roleAccent = Colors.tealAccent;
+                        roleIcon = Icons.support_agent_rounded;
+                        roleLabel = 'Assistant';
+                      } else {
+                        roleAccent = AppTheme.orangeAccent;
+                        roleIcon = Icons.person_rounded;
+                        roleLabel = 'Patient';
+                      }
+
                       return Expanded(
                         child: GestureDetector(
                           onTap: () => setState(() {
@@ -193,21 +217,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  role == 'doctor'
-                                      ? Icons.medical_services_rounded
-                                      : Icons.person_rounded,
+                                  roleIcon,
                                   color: isActive ? roleAccent : Colors.white38,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  role == 'doctor' ? 'Doctor' : 'Patient',
+                                  roleLabel,
                                   style: TextStyle(
                                     color: isActive ? roleAccent : Colors.white38,
                                     fontWeight: isActive
                                         ? FontWeight.w700
                                         : FontWeight.w400,
-                                    fontSize: 15,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],

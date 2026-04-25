@@ -4,6 +4,7 @@ import 'package:hyoid_app/core/theme/app_theme.dart';
 import 'package:hyoid_app/features/patient/presentation/screens/main_navigation_screen.dart';
 import 'package:hyoid_app/features/doctor/shell/doctor_shell.dart';
 import 'package:hyoid_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:hyoid_app/features/assistant/presentation/screens/assistant_main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -69,13 +70,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     final role = prefs.getString('user_role') ?? 'patient';
 
     if (!mounted) return;
+    
+    Widget destination;
+    if (role == 'doctor') {
+      destination = DoctorShell();
+    } else if (role == 'assistant') {
+      destination = const AssistantMainScreen();
+    } else {
+      destination = const MainNavigationScreen();
+    }
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => role == 'doctor'
-            ? DoctorShell()
-            : const MainNavigationScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => destination),
     );
   }
 
